@@ -8,40 +8,55 @@
 Package README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
 </sub></div>
 
-glas - A Git-aware, pipeline-friendly `ls` alternative for modern developers.
+glas - A Git-aware, pipeline-friendly `ls` alternative.
 
-## Description
+This repository is currently a WIP 🚧, and command behavior and interfaces may change without notice.
+
+## Overview
 
 `glas` is a next-generation terminal file lister that seamlessly merges the physical file system with your Git working tree state.
 By logically grouping files by their Git status and virtually flattening nested modifications, it eliminates the cognitive overhead of switching between `ls` and `git status`.
 Built strictly upon the UNIX philosophy, it provides a rich, ANSI-colorized interface for humans while automatically stripping all formatting to yield raw paths when piped to other commands.
 
+## Installation
+
+```bash
+undefined
+```
+
 ## Usage
 
 ```bash
-# Default behavior (Grid layout)
-# Displays files in a standard grid, utilizing ANSI colors to indicate Git status 
-# (e.g., Modified, Untracked).
-glas
+git glas [OPTIONS] [FILE]...
+    or
+glas [OPTIONS] [FILE]...
 
-# Detailed list view (-l)
-# Shows a single-column list with a dedicated Git status column, size, date, and path.
-glas -l
+META OPTIONS
+  -h, --help                 show list of command-line options
+  -v, --version              show version of glas
 
-# --- Example Output (Illustrative only) ---
-# GIT   PERMS       SIZE    DATE         NAME
-# [M ]  -rw-r--r--   12 KB  2 hours ago  src/deep/nested/core.rs
-# [??]  -rw-r--r--     0 B  Just now     new_file.txt
-# [  ]  drwxr-xr-x       -  May 12       src/
-# ------------------------------------------
+DISPLAY OPTIONS
+  -1, --oneline              display one entry per line
+  -l, --long                 display extended file metadata as a table
+  -h, --header               display a header row in long format
+      --color=WHEN           when to use terminal colors (always, auto, never)
+      --absolute             display entries with their absolute paths
+  -z, --null                 terminate lines with a null byte (\0) for safe pipelining
+      --format=FORMAT        custom output format (e.g., '%(size) %(path)') for robust parsing
 
-# Pipeline friendly (TTY detection)
-# When piped, all visual metadata is purged automatically. 
-# It outputs only raw, newline-separated file paths.
-glas | fzf | xargs vim
+FILTERING AND SORTING OPTIONS
+  -a, --all                  show hidden and dot-files.
+  -d, --treat-dirs-as-files  list directories as files (don't recurse into them)
+  -D, --only-dirs            list only directories
+  -f, --only-files           list only files
+  -s, --sort FIELD           sort entries by FIELD (name, size, time, git)
 
-# Null-separated output for paths with spaces
-glas -z | xargs -0 rm
+GIT-AWARE OPTIONS
+      --git-only             show only tracked files with modifications
+      --show-ignored         show ignored files
+      --no-git               disable Git context fetching
+      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 1)
+      --full-name            output paths relative to the project top directory
 ```
 
 ## Lisence
