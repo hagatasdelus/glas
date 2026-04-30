@@ -3,10 +3,13 @@
 [![Crates.io](https://img.shields.io/badge/crates.io-v0.0.0-orange.svg)](https://crates.io/)
 [![install size](https://img.shields.io/badge/install_size-0.0_kB-green.svg)](https://packagephobia.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Coverage](https://coveralls.io/repos/github/hagatasdelus/glas/badge.svg)](https://coveralls.io/github/hagatasdelus/glas)
 
-<div align="center" style="font-size: 1.1rem; margin-bottom: 1rem;"><sub>
-Package README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
+<div align="center" style="font-size: 1.1rem;"><sub>
+README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
 </sub></div>
+
+<br>
 
 glas - A Git-aware, pipeline-friendly `ls` alternative.
 
@@ -32,7 +35,7 @@ git glas [OPTIONS] [FILE]...
 glas [OPTIONS] [FILE]...
 
 META OPTIONS
-  -h, --help                 show list of command-line options
+  -?                         show list of command-line options
   -v, --version              show version of glas
 
 DISPLAY OPTIONS
@@ -55,7 +58,7 @@ GIT-AWARE OPTIONS
       --git-only             show only tracked files with modifications
       --show-ignored         show ignored files
       --no-git               disable Git context fetching
-      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 1)
+      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 0)
       --full-name            output paths relative to the project top directory
 ```
 

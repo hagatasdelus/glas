@@ -3,10 +3,13 @@
 [![Crates.io](https://img.shields.io/badge/crates.io-v0.0.0-orange.svg)](https://crates.io/)
 [![install size](https://img.shields.io/badge/install_size-0.0_kB-green.svg)](https://packagephobia.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Coverage](https://coveralls.io/repos/github/hagatasdelus/glas/badge.svg)](https://coveralls.io/github/hagatasdelus/glas)
 
-<div align="center" style="font-size: 1.1rem; margin-bottom: 1rem;"><sub>
-Package README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
+<div align="center" style="font-size: 1.1rem;"><sub>
+README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
 </sub></div>
+
+<br>
 
 glas - Git対応でパイプラインフレンドリーな `ls` 代替ツール
 
@@ -23,6 +26,7 @@ glas - Git対応でパイプラインフレンドリーな `ls` 代替ツール
 ```bash
 undefined
 ```
+
 ## 使い方
 
 ```bash
@@ -31,7 +35,7 @@ git glas [OPTIONS] [FILE]...
 glas [OPTIONS] [FILE]...
 
 META OPTIONS:
-  -h, --help                 ヘルプメッセージを表示する
+  -?,                        ヘルプメッセージを表示する
   -v, --version              バージョン情報を表示する
 
 DISPLAY OPTIONS:
@@ -54,8 +58,9 @@ GIT-AWARE OPTIONS:
       --git-only             変更がある追跡対象ファイルのみを表示する 
       --show-ignored         無視されたファイルを表示する
       --no-git               Gitコンテキストの取得を無効にする
-      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 1）
-      --full-name            プロジェクトのルートディレクトリからの相対パスで出力する```
+      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 0）
+      --full-name            プロジェクトのルートディレクトリからの相対パスで出力する
+```
 
 ## ライセンス
 
