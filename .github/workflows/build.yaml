@@ -1,9 +1,8 @@
 name: build
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - "**"
 
 jobs:
   build:
@@ -12,8 +11,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - macOS-latest
           - windows-latest
-          - macos-latest
     steps:
       - name: setup rust
         run: |
@@ -37,6 +36,6 @@ jobs:
       - name: coveralls
         uses: coverallsapp/github-action@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.github_token }}
           path-to-lcov: coverage.lcov
         if: matrix.os == 'ubuntu-latest'
