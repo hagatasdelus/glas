@@ -60,7 +60,7 @@ GIT-AWARE OPTIONS:
       --git-only             変更がある追跡対象ファイルのみを表示する 
       --show-ignored         無視されたファイルを表示する
       --no-git               Gitコンテキストの取得を無効にする
-      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 1）
+      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 0）
       --full-name            プロジェクトのルートディレクトリからの相対パスで出力する
 ```
 
