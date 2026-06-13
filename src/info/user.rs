@@ -18,3 +18,47 @@ pub fn long_user(entry: &RenderedEntry, user_cache: &mut FxHashMap<u32, String>)
     user_cache.insert(uid, user.clone());
     user
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::file::EntryKind;
+    use crate::fs::git::GitKind;
+
+    fn dummy_entry_with_uid(uid: Option<u32>) -> RenderedEntry {
+        RenderedEntry {
+            path: "test".to_string(),
+            kind: EntryKind::File,
+            git: GitKind::Clean,
+            mode: Some(0o100644),
+            uid,
+            has_xattrs: false,
+            size: 0,
+            modified: None,
+            stages: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn test_long_user_none() {
+        let entry = dummy_entry_with_uid(None);
+        let mut cache = FxHashMap::default();
+        assert_eq!(long_user(&entry, &mut cache), "-");
+    }
+
+    #[test]
+    fn test_long_user_cached() {
+        let entry = dummy_entry_with_uid(Some(1000));
+        let mut cache = FxHashMap::default();
+        cache.insert(1000, "cached_user".to_string());
+        assert_eq!(long_user(&entry, &mut cache), "cached_user");
+    }
+
+    #[test]
+    fn test_long_user_not_cached_missing() {
+        let entry = dummy_entry_with_uid(Some(99999));
+        let mut cache = FxHashMap::default();
+        assert_eq!(long_user(&entry, &mut cache), "99999");
+        assert_eq!(cache.get(&99999).unwrap(), "99999");
+    }
+}

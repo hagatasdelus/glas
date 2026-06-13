@@ -123,3 +123,57 @@ pub fn component_to_path(component: Component<'_>) -> PathBuf {
         _ => PathBuf::new(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_entry_display_methods() {
+        let entry_file = Entry::new_deleted(PathBuf::from("/a"), PathBuf::from("a"));
+        assert_eq!(entry_file.display_mode(), Some(0o100644));
+        assert_eq!(entry_file.display_uid(), Some(0));
+
+        let entry_summary = Entry {
+            abs_path: PathBuf::from("/a"),
+            rel_to_target: PathBuf::from("a"),
+            kind: EntryKind::Summary { modified_count: 5 },
+            git: GitKind::Clean,
+            mode: 0o100644,
+            uid: 0,
+            has_xattrs: false,
+            size: 0,
+            modified: None,
+            stages: Vec::new(),
+        };
+        assert_eq!(entry_summary.display_mode(), None);
+        assert_eq!(entry_summary.display_uid(), None);
+    }
+
+    #[test]
+    fn test_absolutize() {
+        let abs = Path::new("/foo/bar");
+        assert_eq!(absolutize(abs).unwrap(), PathBuf::from("/foo/bar"));
+
+        let rel = Path::new("nonexistent_file_xyz");
+        let abs_rel = absolutize(rel).unwrap();
+        assert!(abs_rel.is_absolute());
+        assert!(abs_rel.ends_with("nonexistent_file_xyz"));
+    }
+
+    #[test]
+    fn test_is_hidden_path() {
+        assert!(is_hidden_path(".hidden"));
+        assert!(is_hidden_path("dir/.hidden"));
+        assert!(is_hidden_path("dir/.hidden/file"));
+        assert!(!is_hidden_path("visible"));
+        assert!(!is_hidden_path("dir/visible/file"));
+    }
+
+    #[test]
+    fn test_component_to_path() {
+        assert_eq!(component_to_path(Component::Normal(std::ffi::OsStr::new("foo"))), PathBuf::from("foo"));
+        assert_eq!(component_to_path(Component::RootDir), PathBuf::new());
+        assert_eq!(component_to_path(Component::CurDir), PathBuf::new());
+    }
+}

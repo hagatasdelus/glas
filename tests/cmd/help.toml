@@ -1,0 +1,39 @@
+bin.name = "glas"
+args = ["-?"]
+status.code = 0
+stdout = """
+USAGE:
+  glas [OPTIONS] [FILE]...
+
+META OPTIONS:
+  -?             show list of command-line options
+  -v, --version  show version of glas
+
+DISPLAY OPTIONS:
+  -1, --oneline          display one entry per line
+  -l, --long             display extended file metadata as a table
+  -h, --header           display a header row in long format
+      --color <COLOR>    [default: auto] [possible values: always, auto, never]
+      --absolute         display entries with their absolute paths
+  -z, --null             terminate lines with a null byte
+      --format <FORMAT>  custom output format
+
+FILTERING AND SORTING OPTIONS:
+  -a, --all                  show hidden and dot-files
+  -d, --treat-dirs-as-files  list directories as files
+  -D, --only-dirs            list only directories
+  -f, --only-files           list only files
+  -s, --sort <SORT>          [possible values: name, size, time, git]
+
+GIT-AWARE OPTIONS:
+  -c, --cached               show cached files in index (default)
+      --stage                show staged contents' mode bits, object name and stage number
+      --deleted              show files with an unstaged deletion
+  -m, --modified             show files with an unstaged modification
+  -o, --others               show other (untracked) files in the output
+      --ignored              show only ignored files in the output
+      --include-ignored      include ignored files in output
+      --no-git               disable Git context fetching
+      --flatten[=<FLATTEN>]  flatten nested modified files [default: 0]
+      --full-name            output paths relative to repo root
+"""

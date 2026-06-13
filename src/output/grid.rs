@@ -54,3 +54,84 @@ pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut Str
         out.push('\n');
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::file::EntryKind;
+    use crate::fs::git::GitKind;
+
+    fn dummy_entry(path: &str) -> RenderedEntry {
+        RenderedEntry {
+            path: path.to_string(),
+            kind: EntryKind::File,
+            git: GitKind::Clean,
+            mode: Some(0o100644),
+            uid: Some(0),
+            has_xattrs: false,
+            size: 0,
+            modified: None,
+            stages: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn test_render_grid_empty() {
+        let mut out = String::new();
+        render_grid(&[], false, &mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_render_grid_fallback_no_term_width() {
+        let old_columns = std::env::var("COLUMNS");
+        unsafe {
+            std::env::remove_var("COLUMNS");
+        }
+        
+        let entries = vec![dummy_entry("a"), dummy_entry("bb"), dummy_entry("ccc")];
+        let mut out = String::new();
+        render_grid(&entries, false, &mut out);
+        
+        assert_eq!(out, "a  bb  ccc\n");
+
+        if let Ok(val) = old_columns {
+            unsafe {
+                std::env::set_var("COLUMNS", val);
+            }
+        }
+    }
+
+    #[test]
+    fn test_render_grid_with_columns_env() {
+        let old_columns = std::env::var("COLUMNS");
+        unsafe {
+            std::env::set_var("COLUMNS", "20");
+        }
+
+        let entries = vec![
+            dummy_entry("a"),
+            dummy_entry("bb"),
+            dummy_entry("ccc"),
+            dummy_entry("d"),
+            dummy_entry("e"),
+        ];
+        let mut out = String::new();
+        render_grid(&entries, false, &mut out);
+
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0], "a    ccc  e");
+        assert_eq!(lines[1], "bb   d");
+
+        if let Ok(val) = old_columns {
+            unsafe {
+                std::env::set_var("COLUMNS", val);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("COLUMNS");
+            }
+        }
+    }
+}
