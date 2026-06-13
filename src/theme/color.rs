@@ -13,6 +13,8 @@ pub fn apply_color(
         return rendered.to_string();
     }
 
+    let is_special_file = entry.path == "Cargo.toml" || entry.path == "justfile";
+
     match entry.git {
         GitKind::Conflicted => rendered.red().to_string(),
         GitKind::Staged => rendered.green().to_string(),
@@ -20,7 +22,15 @@ pub fn apply_color(
         GitKind::Deleted => rendered.red().to_string(),
         GitKind::Untracked => rendered.cyan().to_string(),
         GitKind::Ignored => rendered.bright_black().to_string(),
-        GitKind::Clean => rendered.to_string(),
+        GitKind::Clean => {
+            if entry.kind == crate::fs::file::EntryKind::Directory {
+                rendered.blue().to_string()
+            } else if is_special_file {
+                format!("\u{1b}[1m{}\u{1b}[0m", rendered)
+            } else {
+                rendered.to_string()
+            }
+        }
     }
 }
 
