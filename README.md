@@ -55,10 +55,15 @@ FILTERING AND SORTING OPTIONS
   -s, --sort FIELD           sort entries by FIELD (name, size, time, git)
 
 GIT-AWARE OPTIONS
-      --git-only             show only tracked files with modifications
-      --show-ignored         show ignored files
+  -c, --cached               show cached files in index (default)
+      --stage                show staged contents' mode bits, object name and stage number
+      --deleted              show files with an unstaged deletion
+  -m, --modified             show files with an unstaged modification
+  -o, --others               show other (untracked) files in the output
+      --ignored              show only ignored files in the output
+      --include-ignored      include ignored files in output (alias: --show-ignored)
       --no-git               disable Git context fetching
-      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 0)
+      --flatten[=DEPTH]      flatten nested modified files (default: 0, --flatten with no value defaults to 'all')
       --full-name            output paths relative to the project top directory
 ```
 

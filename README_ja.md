@@ -53,12 +53,17 @@ FILTERING & SORTING OPTIONS:
   -D, --only-dirs            ディレクトリのみを表示する
   -f, --only-files           ファイルのみを表示する
   -s, --sort FIELD           指定したフィールドでソートする [name, size, time, git] (デフォルト: git, then name)
-    
+ 
 GIT-AWARE OPTIONS:
-      --git-only             変更がある追跡対象ファイルのみを表示する 
-      --show-ignored         無視されたファイルを表示する
+  -c, --cached               Gitインデックスにキャッシュされた（追跡対象の）ファイルを表示する（デフォルト）
+      --stage                ステージングされた情報のモードビット、オブジェクト名、ステージ番号を表示する
+      --deleted              未ステージの削除されたファイルを表示する
+  -m, --modified             未ステージの変更されたファイルを表示する
+  -o, --others               その他の（追跡対象外の）ファイルを表示する
+      --ignored              無視されたファイルのみを表示する
+      --include-ignored      無視されたファイルを含めて表示する（別名: --show-ignored）
       --no-git               Gitコンテキストの取得を無効にする
-      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 0）
+      --flatten[=DEPTH]      ネストされた変更ファイルを展開して表示する（デフォルト: 0、値を指定しない場合は 'all'）
       --full-name            プロジェクトのルートディレクトリからの相対パスで出力する
 ```
 
