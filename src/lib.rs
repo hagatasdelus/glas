@@ -1,3 +1,8 @@
+//! # glas
+//!
+//! `glas` は Git のステータスを認識する、モダンな `ls` の代替コマンドラインツールです。
+//! ファイルのパーミッション、サイズ、更新日時、Gitのステータスなどを色鮮やかに一覧表示します。
+
 mod fs;
 mod info;
 mod options;
@@ -13,6 +18,8 @@ use fs::collect_target_entries;
 use options::{Cli, ColorWhen, DirOptions, RenderOptions, resolve_layout_mode};
 use output::{sort_entries, write_output};
 
+/// `glas` コマンドのメインエントリーポイントです。
+/// コマンドライン引数をパースし、指定されたディレクトリの内容を表示します。
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     run_with_cli(cli)
