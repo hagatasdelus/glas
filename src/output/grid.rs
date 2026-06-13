@@ -1,3 +1,8 @@
+//! # output/grid
+//!
+//! ターミナル幅に合わせて、ファイルエントリー群をグリッド状（複数列）に整列させて
+//! 描画するグリッドレイアウト処理を提供するモジュールです。
+
 use terminal_size::{Width, terminal_size};
 
 use crate::output::render::RenderedEntry;
@@ -10,6 +15,8 @@ fn get_terminal_width() -> Option<usize> {
         .or_else(|| terminal_size().map(|(Width(w), _)| w as usize))
 }
 
+/// ファイルエントリー群をターミナル幅に応じたグリッド形式で整列させ、出力バッファに書き込みます。
+/// ターミナル幅が取得できない場合は、1行に空白区切りで並べるフォールバック動作を行います。
 pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut String) {
     if entries.is_empty() {
         return;
@@ -41,17 +48,28 @@ pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut Str
             let idx = c * num_rows + r;
             if idx < entries.len() {
                 let entry = &entries[idx];
-                let rendered = apply_color(&entry.path, entry, color_enabled, false);
-                if c == num_cols - 1 || idx + num_rows >= entries.len() {
-                    out.push_str(&rendered);
-                } else {
-                    let padding = col_width.saturating_sub(entry.path.len());
-                    out.push_str(&rendered);
-                    out.push_str(&" ".repeat(padding));
-                }
+                let is_last_col = c == num_cols - 1 || idx + num_rows >= entries.len();
+                render_grid_cell(entry, color_enabled, col_width, is_last_col, out);
             }
         }
         out.push('\n');
+    }
+}
+
+fn render_grid_cell(
+    entry: &RenderedEntry,
+    color_enabled: bool,
+    col_width: usize,
+    is_last_col: bool,
+    out: &mut String,
+) {
+    let rendered = apply_color(&entry.path, entry, color_enabled, false);
+    if is_last_col {
+        out.push_str(&rendered);
+    } else {
+        let padding = col_width.saturating_sub(entry.path.len());
+        out.push_str(&rendered);
+        out.push_str(&" ".repeat(padding));
     }
 }
 
@@ -60,6 +78,7 @@ mod tests {
     use super::*;
     use crate::fs::file::EntryKind;
     use crate::fs::git::GitKind;
+    use serial_test::serial;
 
     fn dummy_entry(path: &str) -> RenderedEntry {
         RenderedEntry {
@@ -83,6 +102,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_render_grid_fallback_no_term_width() {
         let old_columns = std::env::var("COLUMNS");
         unsafe {
@@ -103,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_render_grid_with_columns_env() {
         let old_columns = std::env::var("COLUMNS");
         unsafe {
