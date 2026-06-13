@@ -66,25 +66,25 @@ jobs:
             architecture: arm64
             os_name: linux
             artifact_name: ${{ needs.setup.outputs.appname }}
-            ext: ''
+            ext: ""
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             architecture: amd64
             os_name: linux
             artifact_name: ${{ needs.setup.outputs.appname }}
-            ext: ''
+            ext: ""
           - os: macos-latest
             target: aarch64-apple-darwin
             architecture: arm64
             os_name: darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
-            ext: ''
+            ext: ""
           - os: macos-latest
             architecture: amd64
             os_name: darwin
             target: x86_64-apple-darwin
             artifact_name: ${{ needs.setup.outputs.appname }}
-            ext: ''
+            ext: ""
     outputs:
       tag: ${{ needs.setup.outputs.tag }}
     steps:
@@ -125,7 +125,7 @@ jobs:
   finalize:
     runs-on: ubuntu-latest
     permissions:
-      contents: write 
+      contents: write
     needs: publish # publish ジョブが完了した後に実行される。
     steps:
       - name: Checkout
