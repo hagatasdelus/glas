@@ -88,11 +88,11 @@ mod tests {
         unsafe {
             std::env::remove_var("COLUMNS");
         }
-        
+
         let entries = vec![dummy_entry("a"), dummy_entry("bb"), dummy_entry("ccc")];
         let mut out = String::new();
         render_grid(&entries, false, &mut out);
-        
+
         assert_eq!(out, "a  bb  ccc\n");
 
         if let Ok(val) = old_columns {

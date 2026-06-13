@@ -45,7 +45,8 @@ mod tests {
             stages: Vec::new(),
         };
 
-        let template = "Path: %(path), Size: %(size), Modified: %(modified), Git: %(git), Type: %(type)";
+        let template =
+            "Path: %(path), Size: %(size), Modified: %(modified), Git: %(git), Type: %(type)";
         let result = render_custom_format(template, &entry);
         assert_eq!(
             result,

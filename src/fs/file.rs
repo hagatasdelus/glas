@@ -172,7 +172,10 @@ mod tests {
 
     #[test]
     fn test_component_to_path() {
-        assert_eq!(component_to_path(Component::Normal(std::ffi::OsStr::new("foo"))), PathBuf::from("foo"));
+        assert_eq!(
+            component_to_path(Component::Normal(std::ffi::OsStr::new("foo"))),
+            PathBuf::from("foo")
+        );
         assert_eq!(component_to_path(Component::RootDir), PathBuf::new());
         assert_eq!(component_to_path(Component::CurDir), PathBuf::new());
     }

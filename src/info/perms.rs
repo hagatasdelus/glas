@@ -102,15 +102,42 @@ mod tests {
         entry_summary.kind = EntryKind::Summary { modified_count: 1 };
         assert_eq!(permission_string(&entry_summary), "d--------- ");
 
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o120777)), "lrwxrwxrwx ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o010666)), "prw-rw-rw- ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o020600)), "crw------- ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o060640)), "brw-r----- ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o140755)), "srwxr-xr-x ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o000755)), ".rwxr-xr-x ");
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o120777)),
+            "lrwxrwxrwx "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o010666)),
+            "prw-rw-rw- "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o020600)),
+            "crw------- "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o060640)),
+            "brw-r----- "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o140755)),
+            "srwxr-xr-x "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o000755)),
+            ".rwxr-xr-x "
+        );
 
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o104644)), ".rwSr--r-- ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o102644)), ".rw-r-Sr-- ");
-        assert_eq!(permission_string(&dummy_entry_with_mode(0o101644)), ".rw-r--r-T ");
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o104644)),
+            ".rwSr--r-- "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o102644)),
+            ".rw-r-Sr-- "
+        );
+        assert_eq!(
+            permission_string(&dummy_entry_with_mode(0o101644)),
+            ".rw-r--r-T "
+        );
     }
 }
