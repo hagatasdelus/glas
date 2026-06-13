@@ -4,6 +4,7 @@
 [![install size](https://img.shields.io/badge/install_size-0.0_kB-green.svg)](https://packagephobia.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/hagatasdelus/glas/badge.svg?branch=main)](https://coveralls.io/github/hagatasdelus/glas?branch=main)
+[![Version](https://img.shields.io/badge/Version-${VERSION}-blue.svg)](https://github.com/hagatasdelus/glas/releases/tag/v${VERSION})
 
 <div align="center" style="font-size: 1.1rem;"><sub>
 README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
@@ -55,15 +56,10 @@ FILTERING AND SORTING OPTIONS
   -s, --sort FIELD           sort entries by FIELD (name, size, time, git)
 
 GIT-AWARE OPTIONS
-  -c, --cached               show cached files in index (default)
-      --stage                show staged contents' mode bits, object name and stage number
-      --deleted              show files with an unstaged deletion
-  -m, --modified             show files with an unstaged modification
-  -o, --others               show other (untracked) files in the output
-      --ignored              show only ignored files in the output
-      --include-ignored      include ignored files in output (alias: --show-ignored)
+      --git-only             show only tracked files with modifications
+      --show-ignored         show ignored files
       --no-git               disable Git context fetching
-      --flatten[=DEPTH]      flatten nested modified files (default: 0, --flatten with no value defaults to 'all')
+      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 0)
       --full-name            output paths relative to the project top directory
 ```
 

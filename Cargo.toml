@@ -1,6 +1,23 @@
 [package]
 name = "glas"
-version = "0.1.0"
+version = "0.1.0-20260529dev"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.6.1", features = ["derive"] }
+git2 = "0.20.4"
+owo-colors = "4.3.0"
+rustc-hash = "2.1.2"
+time = { version = "0.3.47", features = [
+    "formatting",
+    "local-offset",
+    "macros",
+] }
+terminal_size = "0.4.2"
+users = "0.11.0"
+xattr = "1.6.1"
+
+[dev-dependencies]
+assert_cmd = "2.2.1"
+tempfile = "3.27.0"
