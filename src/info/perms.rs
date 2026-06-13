@@ -1,13 +1,13 @@
 //! # info/perms
 //!
-//! ファイルエントリーの権限（Unixパーミッション）情報を、読みやすい文字列表記
-//! （例: `.rw-r--r--@`）にフォーマットするモジュールです。
+//! Provides formatting logic to display file permission (Unix permission) information
+//! in a human-readable string (e.g., `.rw-r--r--@`).
 
 use crate::fs::file::EntryKind;
 use crate::output::render::RenderedEntry;
 
-/// ファイルエントリーの所有権、パーミッションモードビット、拡張属性などを
-/// 統合した11文字のパーミッション文字列を生成します。
+/// Generates an 11-character permission string integrating ownership type,
+/// permission mode bits, and extended attributes.
 pub fn permission_string(entry: &RenderedEntry) -> String {
     if matches!(entry.kind, EntryKind::Summary { .. }) {
         return "d--------- ".to_string();

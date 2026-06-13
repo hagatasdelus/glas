@@ -1,7 +1,7 @@
 //! # output/table
 //!
-//! ファイルエントリー群を標準出力へ書き出す処理全般を提供するモジュールです。
-//! グリッド表示、1行表示、詳細テーブル表示、およびカスタムフォーマット表示に対応します。
+//! Provides functionality for writing file entries to standard output.
+//! Supports grid view, single-column view, detailed table view, and custom format view.
 
 use anyhow::{Context, Result};
 use rustc_hash::FxHashMap;
@@ -107,9 +107,8 @@ impl<'a> TableRenderer<'a> {
     }
 }
 
-/// 収集・ソートされた `RenderedEntry` のリストを、指定されたレイアウトモード
-/// （グリッド、詳細テーブル、1行、カスタムフォーマットなど）に従って
-/// 標準出力（stdout）へフォーマットして書き出します。
+/// Formats and writes the sorted list of `RenderedEntry` to standard output (stdout)
+/// according to the specified output layout mode (grid, long table, single line, custom format, etc.).
 pub fn write_output(
     entries: &[RenderedEntry],
     options: &RenderOptions,

@@ -1,23 +1,23 @@
 //! # options/config
 //!
-//! ディレクトリ探索時のフィルタリングや取得条件を設定する `DirOptions` と、
-//! 出力時のフォーマットやソート条件などを設定する `RenderOptions` を定義します。
+//! Defines `DirOptions` for filtering and traversal during directory scanning,
+//! and `RenderOptions` for output formatting and sorting configuration.
 
 use crate::options::cli::{Cli, SortField};
 
-/// フラット化の深さを定義する列挙型です。
+/// An enum defining the depth of directory flattening.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FlattenDepth {
-    /// 指定された深さまでフラット化します。
+    /// Flatten up to the specified depth.
     Depth(usize),
-    /// すべての階層をフラット化します。
+    /// Flatten all nested levels.
     All,
 }
 
 impl FlattenDepth {
-    /// 文字列から `FlattenDepth` を構築します。
-    /// "all" (大文字小文字無視) の場合は `FlattenDepth::All` になり、
-    /// それ以外の場合は数値パース（失敗時は 0）を伴う `FlattenDepth::Depth` になります。
+    /// Constructs a `FlattenDepth` from a string.
+    /// Case-insensitively resolves "all" to `FlattenDepth::All`,
+    /// and parses numeric values (defaulting to 0 on failure) for `FlattenDepth::Depth`.
     pub fn from_str(s: &str) -> Self {
         if s.eq_ignore_ascii_case("all") {
             Self::All
@@ -27,45 +27,45 @@ impl FlattenDepth {
     }
 }
 
-/// ディレクトリ探索時の振る舞いを決定するオプション設定です。
+/// Configuration options for directory traversal and entry filtering.
 #[derive(Clone, Debug)]
 pub struct DirOptions {
-    /// Git 連携を完全に無効化するかどうか。
+    /// Whether to completely disable Git integration.
     pub no_git: bool,
-    /// ディレクトリ自体をファイルのように扱うかどうか。
+    /// Whether to list directories as if they were regular files.
     pub treat_dirs_as_files: bool,
-    /// 詳細表示モードかどうか。
+    /// Whether detailed (long) output mode is active.
     pub long: bool,
-    /// 隠しファイルを含めるかどうか。
+    /// Whether to include hidden files.
     pub all: bool,
-    /// ディレクトリのみを表示するかどうか。
+    /// Whether to list only directories.
     pub only_dirs: bool,
-    /// ファイルのみを表示するかどうか。
+    /// Whether to list only files.
     pub only_files: bool,
 
     // Git-aware options
-    /// インデックスに登録されている（キャッシュされた）ファイルのみを表示するかどうか。
+    /// Whether to show only cached (staged) files.
     pub cached: bool,
-    /// ステージ情報を含めるかどうか。
+    /// Whether to include stage information.
     pub stage: bool,
-    /// 削除されたファイルのみを表示するかどうか。
+    /// Whether to show only deleted files.
     pub deleted: bool,
-    /// 変更されたファイルのみを表示するかどうか。
+    /// Whether to show only modified files.
     pub modified: bool,
-    /// 未追跡のファイルのみを表示するかどうか。
+    /// Whether to show only untracked files.
     pub others: bool,
-    /// 無視されたファイルのみを表示するかどうか。
+    /// Whether to show only ignored files.
     pub ignored: bool,
-    /// 表示対象に無視ファイルも含めるかどうか。
+    /// Whether to include ignored files in output filters.
     pub include_ignored: bool,
-    /// ディレクトリ構造のフラット化の設定です。
+    /// Flattening depth configuration.
     pub flatten: FlattenDepth,
-    /// Git系の特定の選択フィルタ（cached/stage/deleted/modified/others/ignored）が一つでも有効になっているかどうか。
+    /// Whether any specific Git-related selector filter is enabled.
     pub git_select_mode: bool,
 }
 
 impl DirOptions {
-    /// パース済みのコマンドライン引数（`Cli`）から `DirOptions` を生成します。
+    /// Generates `DirOptions` from parsed command-line arguments (`Cli`).
     pub fn from_cli(cli: &Cli) -> Self {
         let cached = cli.cached;
         let stage = cli.stage;
@@ -96,29 +96,29 @@ impl DirOptions {
     }
 }
 
-/// 出力結果のレンダリングを制御するオプション設定です。
+/// Options controlling output rendering and formatting.
 #[derive(Clone, Debug)]
 pub struct RenderOptions {
-    /// テーブル形式での詳細表示（パーミッション、サイズ等）を行うかどうか。
+    /// Whether to use the detailed long format (table mode).
     pub long: bool,
-    /// ヘッダー行を表示するかどうか。
+    /// Whether to display a header row.
     pub header: bool,
-    /// 出力を NUL 文字で区切るかどうか。
+    /// Whether to separate outputs using NUL character.
     pub null: bool,
-    /// 独自のカスタム出力フォーマットテンプレート。
+    /// Custom template for rendering output entries.
     pub format: Option<String>,
-    /// 絶対パスで表示するかどうか。
+    /// Whether to output absolute paths.
     pub absolute: bool,
-    /// Git リポジトリルートからの相対パスで表示するかどうか。
+    /// Whether to display paths relative to the Git repository root.
     pub full_name: bool,
-    /// ソート条件です。
+    /// Sort criteria.
     pub sort: Option<SortField>,
-    /// ステージ情報を表示するかどうか。
+    /// Whether to display stage information.
     pub stage: bool,
 }
 
 impl RenderOptions {
-    /// コマンドライン引数（`Cli`）から `RenderOptions` を生成します。
+    /// Generates `RenderOptions` from command-line arguments (`Cli`).
     pub fn from_cli(cli: &Cli) -> Self {
         Self {
             long: cli.long,

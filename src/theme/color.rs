@@ -1,15 +1,15 @@
 //! # theme/color
 //!
-//! ファイルエントリーの種類（ディレクトリ）や Git のステータスに応じて
-//! 適切な ANSI カラー表示や太字表示を適用する処理を提供するモジュールです。
+//! Provides features to apply appropriate ANSI colors or bold styling to file entries
+//! based on their type (e.g., directories) or Git status.
 
 use owo_colors::OwoColorize;
 
 use crate::fs::git::GitKind;
 use crate::output::render::RenderedEntry;
 
-/// 指定されたファイルパスのレンダリング文字列に、Git ステータスやファイル種類、
-/// 特殊ファイルのルールに基づいて ANSI エスケープのカラーやスタイル（太字）を適用します。
+/// Applies ANSI escape colors and styles (e.g., bold) to a rendered string of a file entry
+/// based on its Git status, entry type, or special file patterns.
 pub fn apply_color(
     rendered: &str,
     entry: &RenderedEntry,

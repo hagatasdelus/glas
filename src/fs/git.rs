@@ -1,7 +1,7 @@
 //! # fs/git
 //!
-//! Git リポジトリのステータス情報（追跡状況、変更ステージ、競合など）の取得と
-//! ファイルエントリーへのマッピング処理を提供するモジュールです。
+//! Provides functionality for retrieving Git repository status information (untracked, staged, conflicted, etc.)
+//! and mapping it to file entries.
 
 use anyhow::{Context, Result};
 use git2::{Repository, Status, StatusOptions};
@@ -12,22 +12,22 @@ use std::path::{Path, PathBuf};
 use crate::fs::file::{Entry, EntryKind, component_to_path, is_hidden_path};
 use crate::options::{DirOptions, config::FlattenDepth};
 
-/// ファイルの Git ステータスの種類を定義する列挙型です。
+/// Enum defining types of Git status for a file.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GitKind {
-    /// 競合状態。
+    /// Conflicted state.
     Conflicted,
-    /// ステージング（索引に追加）された状態。
+    /// Staged (added to index) state.
     Staged,
-    /// 変更されている（ステージング未登録）状態。
+    /// Modified (not staged) state.
     Modified,
-    /// 削除された状態。
+    /// Deleted state.
     Deleted,
-    /// 未追跡（新規作成かつ未登録）の状態。
+    /// Untracked (new and unstaged) state.
     Untracked,
-    /// 無視リスト（.gitignore等）に登録されている状態。
+    /// Ignored (.gitignore, etc.) state.
     Ignored,
-    /// 変更のないクリーンな状態。
+    /// Clean state with no changes.
     Clean,
 }
 
@@ -100,30 +100,30 @@ impl GitKind {
 }
 
 #[derive(Clone, Debug)]
-/// Git インデックス上のステージ情報を保持する構造体です。
+/// Struct holding stage information on the Git index.
 pub struct StageInfo {
-    /// ファイルのパーミッションモード。
+    /// File permission mode.
     pub mode: u32,
-    /// Gitオブジェクトハッシュ。
+    /// Git object hash ID.
     pub object_id: String,
-    /// ステージ番号（1, 2, 3等）。
+    /// Stage number (e.g., 1, 2, 3).
     pub stage: i32,
 }
 
-/// 対象ディレクトリにおける Git リポジトリの各種コンテキスト情報を保持する構造体です。
+/// Struct holding Git repository context information for the target directory.
 #[derive(Debug)]
 pub struct GitContext {
-    /// Git リポジトリのワークツリーのルート絶対パス。
+    /// Absolute path to the Git repository worktree root.
     pub repo_root: PathBuf,
-    /// 各ファイルパスと Git ステータス（`GitKind`）のマッピング。
+    /// Mapping from file paths to Git status (`GitKind`).
     pub statuses: FxHashMap<PathBuf, GitKind>,
-    /// 各ファイルパスと Git ステージ情報のリストのマッピング。
+    /// Mapping from file paths to lists of stage information.
     pub stages: FxHashMap<PathBuf, Vec<StageInfo>>,
 }
 
-/// 指定された絶対パスから Git リポジトリを検出し、そのリポジトリ上の
-/// コンテキスト情報（変更ステータス、インデックス等）をロードします。
-/// Git リポジトリでない場合は `Ok(None)` を返します。
+/// Detects a Git repository from the specified absolute path, and loads context
+/// information (statuses, index/stages, etc.) for that repository.
+/// Returns `Ok(None)` if the path is not part of a Git repository.
 pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<GitContext>> {
     let repo = match Repository::discover(target_abs) {
         Ok(repo) => repo,
@@ -190,8 +190,8 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     }))
 }
 
-/// 収集されたファイルエントリー群に対し、Git コンテキスト情報（ステータスやステージ）
-/// を適用・統合し、Gitのフィルタリング条件やフラット化設定に基づいてエントリーリストを再構成します。
+/// Applies and integrates Git context information (status and stages) into the collected file entries,
+/// and reconstructs the entry list based on Git filtering rules and flattening configuration.
 pub fn apply_git_overlay(
     entries: &mut Vec<Entry>,
     target_abs: &Path,

@@ -1,7 +1,7 @@
 //! # output/render
 //!
-//! コマンド出力用にファイルパスの相対/絶対化や、エントリーのソート処理など、
-//! ファイルエントリーの描画前変換処理を提供するモジュールです。
+//! Provides pre-rendering transformation logic for file entries, such as resolving absolute/relative paths
+//! and sorting entries for output.
 
 use std::cmp::Ordering;
 use std::path::Path;
@@ -11,7 +11,7 @@ use crate::fs::file::{Entry, EntryKind};
 use crate::fs::git::{GitContext, GitKind, StageInfo};
 use crate::options::{RenderOptions, SortField};
 
-/// レンダリング（描画）に必要な情報を整形して保持するエントリー構造体です。
+/// Struct holding formatted information required for rendering.
 #[derive(Debug)]
 pub struct RenderedEntry {
     pub path: String,
@@ -25,8 +25,8 @@ pub struct RenderedEntry {
     pub stages: Vec<StageInfo>,
 }
 
-/// オプション指定（絶対パス化、Gitリポジトリルートからのフルネーム化など）に基づいて、
-/// エントリーのパスを文字列としてフォーマットします。
+/// Formats the entry path as a string according to configuration options (e.g., converting to absolute paths,
+/// or using paths relative to the Git repository root).
 pub fn render_path(
     entry: &Entry,
     target_abs: &Path,
@@ -63,8 +63,7 @@ pub fn render_path(
     base_path
 }
 
-/// 指定されたソート条件（名前、サイズ、時間、Gitステータス順）に従って、
-/// `RenderedEntry` のスライスをソートします。
+/// Sorts a slice of `RenderedEntry` based on the specified sort field (e.g., name, size, time, Git status).
 pub fn sort_entries(entries: &mut [RenderedEntry], sort: Option<SortField>) {
     entries.sort_by(|left, right| match sort {
         Some(SortField::Name) => left.path.cmp(&right.path),

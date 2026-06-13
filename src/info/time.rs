@@ -1,13 +1,13 @@
 //! # info/time
 //!
-//! ファイルエントリーの最終更新日時を、指定されたタイムゾーンオフセットに従って
-//! 指定フォーマットの文字列に変換する処理を提供するモジュールです。
+//! Provides formatting logic to convert the last modification time of a file entry
+//! to a string using a specified timezone offset and format.
 
 use std::time::SystemTime;
 use time::{OffsetDateTime, UtcOffset, macros::format_description};
 
-/// 最終更新日時を `[day] [month] [hour]:[minute]` 形式の文字列にフォーマットします。
-/// 日時情報がない場合は `"-"` を返します。
+/// Formats the last modification time into a string with the `[day] [month] [hour]:[minute]` format.
+/// Returns `"-"` if no time information is available.
 pub fn long_modified(modified: Option<SystemTime>, offset: UtcOffset) -> String {
     const DATE_FORMAT: &[time::format_description::FormatItem<'static>] =
         format_description!("[day padding:zero] [month repr:short] [hour]:[minute]");

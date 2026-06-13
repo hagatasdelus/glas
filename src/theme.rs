@@ -1,7 +1,6 @@
 //! # theme
 //!
-//! ターミナル出力のテーマ（カラー出力やスタイル設定など）を制御する
-//! 機能を提供するモジュールです。
+//! Provides features to manage terminal output themes (color styling and styles).
 
 pub mod color;
 

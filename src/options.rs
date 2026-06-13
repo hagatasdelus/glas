@@ -1,7 +1,7 @@
 //! # options
 //!
-//! このモジュールは、コマンドライン引数のパース（`cli`）、表示やフィルタリングのオプション設定（`config`）、
-//! 出力レイアウトの決定（`layout`）などの設定オプション全般を提供します。
+//! This module provides configuration options, including command-line argument parsing (`cli`),
+//! filtering/display configuration (`config`), and output layout determination (`layout`).
 
 pub mod cli;
 pub mod config;

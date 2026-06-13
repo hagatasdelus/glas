@@ -1,7 +1,7 @@
 //! # fs/file
 //!
-//! ファイル及びディレクトリのメタデータ情報を表現する `Entry` 構造体や、
-//! パス操作のヘルパー関数群を提供するモジュールです。
+//! Defines the `Entry` struct representing file/directory metadata
+//! and provides path manipulation helper functions.
 
 use anyhow::{Context, Result};
 use std::fs;
@@ -11,40 +11,39 @@ use std::time::SystemTime;
 
 use crate::fs::git::{GitKind, StageInfo};
 
-/// ファイルの種類を定義する列挙型です。
+/// Enum defining types of entries.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EntryKind {
-    /// 通常のファイル。
+    /// A regular file.
     File,
-    /// ディレクトリ。
+    /// A directory.
     Directory,
-    /// 変更ファイルのサマリー。
+    /// A summary of modified files.
     Summary { modified_count: usize },
 }
 
-/// ファイルまたはディレクトリの各種メタデータ（ファイルモード、所有者、サイズ、タイムスタンプなど）
-/// を保持する構造体です。
+/// Struct holding various metadata of a file or directory (permissions, owner, size, timestamp, etc.).
 #[derive(Debug)]
 pub struct Entry {
-    /// 絶対パス。
+    /// Absolute path.
     pub abs_path: PathBuf,
-    /// 探索対象ディレクトリからの相対パス。
+    /// Relative path from the traversal target directory.
     pub rel_to_target: PathBuf,
-    /// ファイルの種類。
+    /// The entry type.
     pub kind: EntryKind,
-    /// Gitのステータス情報。
+    /// Git status information.
     pub git: GitKind,
-    /// ファイルのパーミッションモードビット。
+    /// File permission mode bits.
     pub mode: u32,
-    /// 所有者のユーザーID (UID)。
+    /// Owner's user ID (UID).
     pub uid: u32,
-    /// 拡張属性 (xattr) を持っているかどうか。
+    /// Whether the file has extended attributes (xattr).
     pub has_xattrs: bool,
-    /// バイトサイズ。
+    /// File size in bytes.
     pub size: u64,
-    /// 最終更新日時。
+    /// Last modification time.
     pub modified: Option<SystemTime>,
-    /// Gitステージ情報。
+    /// Git staging details.
     pub stages: Vec<StageInfo>,
 }
 
@@ -113,8 +112,8 @@ pub fn has_extended_attributes(path: &Path) -> bool {
     }
 }
 
-/// 与えられたパスを絶対パスに変換します。変換に失敗した、あるいは存在しないパスの場合は
-/// カレントディレクトリと結合したパスをフォールバックとして返します。
+/// Resolves a path to an absolute path. If resolution fails or path is non-existent,
+/// falls back to joining with the current directory.
 pub fn absolutize(path: &Path) -> Result<PathBuf> {
     let joined = if path.is_absolute() {
         path.to_path_buf()
@@ -130,8 +129,7 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
     }
 }
 
-/// 指定されたパスの中にドット `.` で始まる隠しディレクトリや隠しファイルが
-/// 含まれているかどうかを判定します。
+/// Determines whether the path contains any hidden components starting with a dot `.`.
 pub fn is_hidden_path(path: impl AsRef<Path>) -> bool {
     path.as_ref().components().any(|part| {
         if let Component::Normal(name) = part {
@@ -142,7 +140,7 @@ pub fn is_hidden_path(path: impl AsRef<Path>) -> bool {
     })
 }
 
-/// パスコンポーネントを `PathBuf` に変換します。通常のコンポーネント以外は空のパスを返します。
+/// Converts a path component to a `PathBuf`. Returns an empty path for special components.
 pub fn component_to_path(component: Component<'_>) -> PathBuf {
     match component {
         Component::Normal(name) => PathBuf::from(name),

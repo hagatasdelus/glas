@@ -1,7 +1,7 @@
 //! # output/grid
 //!
-//! ターミナル幅に合わせて、ファイルエントリー群をグリッド状（複数列）に整列させて
-//! 描画するグリッドレイアウト処理を提供するモジュールです。
+//! Provides grid layout processing to arrange and display file entries in a grid (multiple columns)
+//! aligned to the terminal width.
 
 use terminal_size::{Width, terminal_size};
 
@@ -15,8 +15,8 @@ fn get_terminal_width() -> Option<usize> {
         .or_else(|| terminal_size().map(|(Width(w), _)| w as usize))
 }
 
-/// ファイルエントリー群をターミナル幅に応じたグリッド形式で整列させ、出力バッファに書き込みます。
-/// ターミナル幅が取得できない場合は、1行に空白区切りで並べるフォールバック動作を行います。
+/// Arranges file entries in a grid layout based on the terminal width and writes the result to the output buffer.
+/// If the terminal width cannot be determined, it falls back to displaying all entries in a single row separated by spaces.
 pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut String) {
     if entries.is_empty() {
         return;

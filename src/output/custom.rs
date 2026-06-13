@@ -1,15 +1,14 @@
 //! # output/custom
 //!
-//! ユーザー指定のカスタムフォーマットテンプレートに基づいて、ファイルエントリー情報を
-//! レンダリングする処理を提供するモジュールです。
+//! Provides rendering logic for file entries based on user-defined custom format templates.
 
 use std::time::UNIX_EPOCH;
 
 use crate::fs::file::EntryKind;
 use crate::output::render::RenderedEntry;
 
-/// 指定されたカスタムテンプレート（例: `%(path) %(size)`）に従って、
-/// ファイルエントリーの情報を置換してレンダリングした文字列を生成します。
+/// Generates a rendered string for a file entry by substituting placeholders in the specified custom template
+/// (e.g., `%(path) %(size)`).
 pub fn render_custom_format(template: &str, entry: &RenderedEntry) -> String {
     let kind = match entry.kind {
         EntryKind::File => "file",
