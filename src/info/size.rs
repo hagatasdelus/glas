@@ -1,6 +1,13 @@
+//! # info/size
+//!
+//! ファイルサイズを人間が読みやすい形式（例: `1k`, `1.5M`）に変換するフォーマット処理を
+//! 提供するモジュールです。
+
 use crate::fs::file::EntryKind;
 use crate::output::render::RenderedEntry;
 
+/// テーブル詳細表示で用いるファイルサイズの文字列を生成します。
+/// ファイルでないエントリー（ディレクトリなど）の場合は `"-"` を返します。
 pub fn long_size(entry: &RenderedEntry) -> String {
     if !matches!(entry.kind, EntryKind::File) {
         return "-".to_string();
@@ -8,6 +15,7 @@ pub fn long_size(entry: &RenderedEntry) -> String {
     human_size(entry.size)
 }
 
+/// バイト単位の数値を人間が読みやすい単位（k, M, G, T...）に丸めた文字列に変換します。
 pub fn human_size(size: u64) -> String {
     if size < 1024 {
         return size.to_string();

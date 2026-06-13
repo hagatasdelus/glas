@@ -1,8 +1,16 @@
+//! # info/user
+//!
+//! ファイルエントリーの所有者ユーザー（UIDからユーザー名への変換）のフォーマットと
+//! システムコールのオーバーヘッドを削減するキャッシュ機構を提供するモジュールです。
+
 use rustc_hash::FxHashMap;
 use users::get_user_by_uid;
 
 use crate::output::render::RenderedEntry;
 
+/// ファイルエントリーのUIDに対応するユーザー名を取得します。
+/// キャッシュ（`user_cache`）があればそこから取得し、なければシステムから取得してキャッシュに登録します。
+/// 取得できない場合はUIDの数値を文字列として返します。
 pub fn long_user(entry: &RenderedEntry, user_cache: &mut FxHashMap<u32, String>) -> String {
     let Some(uid) = entry.uid else {
         return "-".to_string();

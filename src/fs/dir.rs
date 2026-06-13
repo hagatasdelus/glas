@@ -1,3 +1,8 @@
+//! # fs/dir
+//!
+//! ディレクトリ走査と、探索条件（`DirOptions`）に合致するファイルエントリー群の
+//! 収集処理を提供するモジュールです。
+
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -69,6 +74,8 @@ fn matches_git_selectors(kind: GitKind, options: &DirOptions, has_git: bool) -> 
     matched
 }
 
+/// 指定されたターゲットパス配下のファイル及びディレクトリのエントリーを走査し、
+/// 条件に合致するものを `RenderedEntry` のベクタとして収集します。
 pub fn collect_target_entries(
     target: &Path,
     dir_options: &DirOptions,

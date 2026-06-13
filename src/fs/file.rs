@@ -1,3 +1,8 @@
+//! # fs/file
+//!
+//! ファイル及びディレクトリのメタデータ情報を表現する `Entry` 構造体や、
+//! パス操作のヘルパー関数群を提供するモジュールです。
+
 use anyhow::{Context, Result};
 use std::fs;
 use std::os::unix::fs::MetadataExt;
@@ -6,24 +11,40 @@ use std::time::SystemTime;
 
 use crate::fs::git::{GitKind, StageInfo};
 
+/// ファイルの種類を定義する列挙型です。
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EntryKind {
+    /// 通常のファイル。
     File,
+    /// ディレクトリ。
     Directory,
+    /// 変更ファイルのサマリー。
     Summary { modified_count: usize },
 }
 
+/// ファイルまたはディレクトリの各種メタデータ（ファイルモード、所有者、サイズ、タイムスタンプなど）
+/// を保持する構造体です。
 #[derive(Debug)]
 pub struct Entry {
+    /// 絶対パス。
     pub abs_path: PathBuf,
+    /// 探索対象ディレクトリからの相対パス。
     pub rel_to_target: PathBuf,
+    /// ファイルの種類。
     pub kind: EntryKind,
+    /// Gitのステータス情報。
     pub git: GitKind,
+    /// ファイルのパーミッションモードビット。
     pub mode: u32,
+    /// 所有者のユーザーID (UID)。
     pub uid: u32,
+    /// 拡張属性 (xattr) を持っているかどうか。
     pub has_xattrs: bool,
+    /// バイトサイズ。
     pub size: u64,
+    /// 最終更新日時。
     pub modified: Option<SystemTime>,
+    /// Gitステージ情報。
     pub stages: Vec<StageInfo>,
 }
 
@@ -92,6 +113,8 @@ pub fn has_extended_attributes(path: &Path) -> bool {
     }
 }
 
+/// 与えられたパスを絶対パスに変換します。変換に失敗した、あるいは存在しないパスの場合は
+/// カレントディレクトリと結合したパスをフォールバックとして返します。
 pub fn absolutize(path: &Path) -> Result<PathBuf> {
     let joined = if path.is_absolute() {
         path.to_path_buf()
@@ -107,6 +130,8 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
     }
 }
 
+/// 指定されたパスの中にドット `.` で始まる隠しディレクトリや隠しファイルが
+/// 含まれているかどうかを判定します。
 pub fn is_hidden_path(path: impl AsRef<Path>) -> bool {
     path.as_ref().components().any(|part| {
         if let Component::Normal(name) = part {
@@ -117,6 +142,7 @@ pub fn is_hidden_path(path: impl AsRef<Path>) -> bool {
     })
 }
 
+/// パスコンポーネントを `PathBuf` に変換します。通常のコンポーネント以外は空のパスを返します。
 pub fn component_to_path(component: Component<'_>) -> PathBuf {
     match component {
         Component::Normal(name) => PathBuf::from(name),

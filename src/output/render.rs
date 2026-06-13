@@ -1,3 +1,8 @@
+//! # output/render
+//!
+//! コマンド出力用にファイルパスの相対/絶対化や、エントリーのソート処理など、
+//! ファイルエントリーの描画前変換処理を提供するモジュールです。
+
 use std::cmp::Ordering;
 use std::path::Path;
 use std::time::SystemTime;
@@ -6,6 +11,7 @@ use crate::fs::file::{Entry, EntryKind};
 use crate::fs::git::{GitContext, GitKind, StageInfo};
 use crate::options::{RenderOptions, SortField};
 
+/// レンダリング（描画）に必要な情報を整形して保持するエントリー構造体です。
 #[derive(Debug)]
 pub struct RenderedEntry {
     pub path: String,
@@ -19,6 +25,8 @@ pub struct RenderedEntry {
     pub stages: Vec<StageInfo>,
 }
 
+/// オプション指定（絶対パス化、Gitリポジトリルートからのフルネーム化など）に基づいて、
+/// エントリーのパスを文字列としてフォーマットします。
 pub fn render_path(
     entry: &Entry,
     target_abs: &Path,
@@ -55,6 +63,8 @@ pub fn render_path(
     base_path
 }
 
+/// 指定されたソート条件（名前、サイズ、時間、Gitステータス順）に従って、
+/// `RenderedEntry` のスライスをソートします。
 pub fn sort_entries(entries: &mut [RenderedEntry], sort: Option<SortField>) {
     entries.sort_by(|left, right| match sort {
         Some(SortField::Name) => left.path.cmp(&right.path),
