@@ -25,6 +25,17 @@ pub fn run() -> Result<()> {
     run_with_cli(cli)
 }
 
+#[derive(Debug)]
+pub struct PartialFailure;
+
+impl std::fmt::Display for PartialFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Partial failure during target scanning")
+    }
+}
+
+impl std::error::Error for PartialFailure {}
+
 fn run_with_cli(cli: Cli) -> Result<()> {
     let stdout_is_tty = std::io::stdout().is_terminal();
     let layout = resolve_layout_mode(&cli, stdout_is_tty);
@@ -45,19 +56,28 @@ fn run_with_cli(cli: Cli) -> Result<()> {
     };
 
     let mut rendered = Vec::new();
+    let mut has_error = false;
     for target in targets {
-        rendered.extend(collect_target_entries(
-            &target,
-            &dir_options,
-            &render_options,
-        )?);
+        match collect_target_entries(&target, &dir_options, &render_options) {
+            Ok(entries) => {
+                rendered.extend(entries);
+            }
+            Err(err) => {
+                eprintln!("glas: {}: {}", target.display(), err);
+                has_error = true;
+            }
+        }
     }
 
     sort_entries(&mut rendered, render_options.sort);
 
     write_output(&rendered, &render_options, color_enabled, layout)?;
 
-    Ok(())
+    if has_error {
+        Err(anyhow::anyhow!(PartialFailure))
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

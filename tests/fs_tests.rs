@@ -87,3 +87,28 @@ fn short_h_is_header_not_help() {
     let second_line = text.lines().nth(1).unwrap_or("");
     assert!(second_line.contains(".rw-r--r--"), "stdout was: {text}");
 }
+
+#[test]
+fn test_multiple_targets_partial_failure() {
+    let dir = TempDir::new().expect("temp dir");
+    fs::write(dir.path().join("a.txt"), "a\n").expect("write a");
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(dir.path())
+        .args(["--no-git", "a.txt", "non_existent_file", "--color=never"])
+        .assert()
+        .failure()
+        .code(1)
+        .get_output()
+        .clone();
+
+    let stdout_text = String::from_utf8(output.stdout).expect("utf8 stdout");
+    let stderr_text = String::from_utf8(output.stderr).expect("utf8 stderr");
+
+    assert!(stdout_text.contains("a.txt"), "stdout was: {stdout_text}");
+    assert!(
+        stderr_text.contains("non_existent_file"),
+        "stderr was: {stderr_text}"
+    );
+}
