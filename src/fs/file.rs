@@ -5,9 +5,14 @@
 
 use anyhow::{Context, Result};
 use std::fs;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Component, Path, PathBuf};
 use std::time::SystemTime;
+
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+
+#[cfg(windows)]
+use std::os::windows::fs::MetadataExt;
 
 use crate::fs::git::{GitKind, StageInfo};
 
@@ -59,6 +64,17 @@ impl Entry {
         } else {
             EntryKind::File
         };
+
+        #[cfg(unix)]
+        let mode = metadata.mode();
+        #[cfg(windows)]
+        let mode = if metadata.is_dir() { 0o40755 } else { 0o100644 };
+
+        #[cfg(unix)]
+        let uid = metadata.uid();
+        #[cfg(windows)]
+        let uid = 0;
+
         let has_xattrs = include_xattrs && has_extended_attributes(&abs_path);
 
         Self {
@@ -66,8 +82,8 @@ impl Entry {
             rel_to_target,
             kind,
             git: GitKind::Clean,
-            mode: metadata.mode(),
-            uid: metadata.uid(),
+            mode,
+            uid,
             has_xattrs,
             size: metadata.len(),
             modified: metadata.modified().ok(),
@@ -105,11 +121,17 @@ impl Entry {
     }
 }
 
+#[cfg(unix)]
 pub fn has_extended_attributes(path: &Path) -> bool {
     match xattr::list(path) {
         Ok(mut attrs) => attrs.next().is_some(),
         Err(_) => false,
     }
+}
+
+#[cfg(not(unix))]
+pub fn has_extended_attributes(_path: &Path) -> bool {
+    false
 }
 
 /// Resolves a path to an absolute path. If resolution fails or path is non-existent,
@@ -124,7 +146,19 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
     };
 
     match fs::canonicalize(&joined) {
-        Ok(path) => Ok(path),
+        Ok(path) => {
+            #[cfg(windows)]
+            {
+                let path_str = path.to_string_lossy();
+                if path_str.starts_with(r"\\?\") {
+                    Ok(PathBuf::from(&path_str[4..]))
+                } else {
+                    Ok(path)
+                }
+            }
+            #[cfg(not(windows))]
+            Ok(path)
+        }
         Err(_) => Ok(joined),
     }
 }

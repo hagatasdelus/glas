@@ -161,13 +161,24 @@ fn collect_directory_entries(target_abs: &Path, dir_options: &DirOptions) -> Res
         let item = item.with_context(|| format!("failed to read {}", target_abs.display()))?;
         let rel = PathBuf::from(item.file_name());
 
-        if !dir_options.all && is_hidden_path(&rel) {
-            continue;
-        }
-
         let item_path = item.path();
         let metadata = fs::symlink_metadata(&item_path)
             .with_context(|| format!("failed to read metadata for {}", item_path.display()))?;
+
+        let is_hidden = is_hidden_path(&rel) || {
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::MetadataExt;
+                (metadata.file_attributes() & 0x2) != 0
+            }
+            #[cfg(not(windows))]
+            false
+        };
+
+        if !dir_options.all && is_hidden {
+            continue;
+        }
+
         let entry = Entry::new_file_or_dir(item_path, rel, metadata, dir_options.long);
         if dir_options.only_dirs && !matches!(entry.kind, EntryKind::Directory) {
             continue;

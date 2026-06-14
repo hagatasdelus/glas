@@ -1,7 +1,9 @@
 use assert_cmd::Command;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use tempfile::TempDir;
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 #[test]
 fn null_output_is_nul_separated() {
@@ -29,6 +31,7 @@ fn null_output_is_nul_separated() {
 }
 
 #[test]
+#[cfg(unix)]
 fn long_format_marks_xattr_with_at_sign() {
     let dir = TempDir::new().expect("temp dir");
     let file_path = dir.path().join("a.txt");
@@ -57,6 +60,7 @@ fn long_format_marks_xattr_with_at_sign() {
 }
 
 #[test]
+#[cfg(unix)]
 fn short_h_is_header_not_help() {
     let dir = TempDir::new().expect("temp dir");
     fs::write(dir.path().join("a.txt"), "a\n").expect("write a");
