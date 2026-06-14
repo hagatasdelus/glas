@@ -190,6 +190,31 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     }))
 }
 
+fn merge_or_insert_deleted(
+    abs: PathBuf,
+    rel: PathBuf,
+    git_kind: GitKind,
+    git: &GitContext,
+    by_abs: &mut FxHashMap<PathBuf, usize>,
+    seen_paths: &mut FxHashSet<PathBuf>,
+    entries: &mut Vec<Entry>,
+) {
+    if let Some(idx) = by_abs.get(&abs).copied() {
+        entries[idx].git = entries[idx].git.merge(git_kind);
+        if let Some(stages) = git.stages.get(&abs) {
+            entries[idx].stages = stages.clone();
+        }
+    } else if git_kind == GitKind::Deleted {
+        let mut entry = Entry::new_deleted(abs.clone(), rel);
+        if let Some(stages) = git.stages.get(&abs) {
+            entry.stages = stages.clone();
+        }
+        by_abs.insert(abs.clone(), entries.len());
+        seen_paths.insert(abs);
+        entries.push(entry);
+    }
+}
+
 /// Applies and integrates Git context information (status and stages) into the collected file entries,
 /// and reconstructs the entry list based on Git filtering rules and flattening configuration.
 pub fn apply_git_overlay(
@@ -236,20 +261,15 @@ pub fn apply_git_overlay(
         };
 
         if rel.as_os_str().is_empty() {
-            if let Some(idx) = by_abs.get(&abs).copied() {
-                entries[idx].git = entries[idx].git.merge(*git_kind);
-                if let Some(stages) = git.stages.get(&abs) {
-                    entries[idx].stages = stages.clone();
-                }
-            } else if *git_kind == GitKind::Deleted {
-                let mut entry = Entry::new_deleted(abs.clone(), rel.to_path_buf());
-                if let Some(stages) = git.stages.get(&abs) {
-                    entry.stages = stages.clone();
-                }
-                by_abs.insert(abs.clone(), entries.len());
-                seen_paths.insert(abs.clone());
-                entries.push(entry);
-            }
+            merge_or_insert_deleted(
+                abs.clone(),
+                rel.to_path_buf(),
+                *git_kind,
+                git,
+                &mut by_abs,
+                &mut seen_paths,
+                entries,
+            );
             continue;
         }
 
@@ -263,20 +283,15 @@ pub fn apply_git_overlay(
         }
 
         if depth <= 1 {
-            if let Some(idx) = by_abs.get(&abs).copied() {
-                entries[idx].git = entries[idx].git.merge(*git_kind);
-                if let Some(stages) = git.stages.get(&abs) {
-                    entries[idx].stages = stages.clone();
-                }
-            } else if *git_kind == GitKind::Deleted {
-                let mut entry = Entry::new_deleted(abs.clone(), rel.to_path_buf());
-                if let Some(stages) = git.stages.get(&abs) {
-                    entry.stages = stages.clone();
-                }
-                by_abs.insert(abs.clone(), entries.len());
-                seen_paths.insert(abs.clone());
-                entries.push(entry);
-            }
+            merge_or_insert_deleted(
+                abs.clone(),
+                rel.to_path_buf(),
+                *git_kind,
+                git,
+                &mut by_abs,
+                &mut seen_paths,
+                entries,
+            );
             continue;
         }
 
