@@ -24,7 +24,12 @@ glas - Git対応でパイプラインフレンドリーな `ls` 代替ツール
 ## インストール
 
 ```bash
-undefined
+# リポジトリをクローン
+git clone https://github.com/hagatasdelus/glas.git
+cd glas
+
+# ビルドしてローカルにインストール
+cargo install --path .
 ```
 
 ## 使い方

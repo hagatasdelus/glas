@@ -24,7 +24,12 @@ Built strictly upon the UNIX philosophy, it provides a rich, ANSI-colorized inte
 ## Installation
 
 ```bash
-undefined
+# Clone the repository
+git clone https://github.com/hagatasdelus/glas.git
+cd glas
+
+# Build and install locally
+cargo install --path .
 ```
 
 ## Usage
