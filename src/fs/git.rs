@@ -1,3 +1,8 @@
+//! # fs/git
+//!
+//! Provides functionality for retrieving Git repository status information (untracked, staged, conflicted, etc.)
+//! and mapping it to file entries.
+
 use anyhow::{Context, Result};
 use git2::{Repository, Status, StatusOptions};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -7,14 +12,22 @@ use std::path::{Path, PathBuf};
 use crate::fs::file::{Entry, EntryKind, component_to_path, is_hidden_path};
 use crate::options::{DirOptions, config::FlattenDepth};
 
+/// Enum defining types of Git status for a file.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GitKind {
+    /// Conflicted state.
     Conflicted,
+    /// Staged (added to index) state.
     Staged,
+    /// Modified (not staged) state.
     Modified,
+    /// Deleted state.
     Deleted,
+    /// Untracked (new and unstaged) state.
     Untracked,
+    /// Ignored (.gitignore, etc.) state.
     Ignored,
+    /// Clean state with no changes.
     Clean,
 }
 
@@ -87,19 +100,30 @@ impl GitKind {
 }
 
 #[derive(Clone, Debug)]
+/// Struct holding stage information on the Git index.
 pub struct StageInfo {
+    /// File permission mode.
     pub mode: u32,
+    /// Git object hash ID.
     pub object_id: String,
+    /// Stage number (e.g., 1, 2, 3).
     pub stage: i32,
 }
 
+/// Struct holding Git repository context information for the target directory.
 #[derive(Debug)]
 pub struct GitContext {
+    /// Absolute path to the Git repository worktree root.
     pub repo_root: PathBuf,
+    /// Mapping from file paths to Git status (`GitKind`).
     pub statuses: FxHashMap<PathBuf, GitKind>,
+    /// Mapping from file paths to lists of stage information.
     pub stages: FxHashMap<PathBuf, Vec<StageInfo>>,
 }
 
+/// Detects a Git repository from the specified absolute path, and loads context
+/// information (statuses, index/stages, etc.) for that repository.
+/// Returns `Ok(None)` if the path is not part of a Git repository.
 pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<GitContext>> {
     let repo = match Repository::discover(target_abs) {
         Ok(repo) => repo,
@@ -166,6 +190,8 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     }))
 }
 
+/// Applies and integrates Git context information (status and stages) into the collected file entries,
+/// and reconstructs the entry list based on Git filtering rules and flattening configuration.
 pub fn apply_git_overlay(
     entries: &mut Vec<Entry>,
     target_abs: &Path,

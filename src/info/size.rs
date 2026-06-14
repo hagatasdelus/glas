@@ -1,6 +1,13 @@
+//! # info/size
+//!
+//! Provides size formatting logic to convert file sizes in bytes into a human-readable format
+//! (e.g., `1k`, `1.5M`).
+
 use crate::fs::file::EntryKind;
 use crate::output::render::RenderedEntry;
 
+/// Generates a file size string used for detailed table display.
+/// Returns `"-"` if the entry is not a regular file (e.g., directories).
 pub fn long_size(entry: &RenderedEntry) -> String {
     if !matches!(entry.kind, EntryKind::File) {
         return "-".to_string();
@@ -8,6 +15,7 @@ pub fn long_size(entry: &RenderedEntry) -> String {
     human_size(entry.size)
 }
 
+/// Converts a numeric size in bytes to a string with a human-readable unit (k, M, G, T...).
 pub fn human_size(size: u64) -> String {
     if size < 1024 {
         return size.to_string();

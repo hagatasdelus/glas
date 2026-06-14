@@ -1,3 +1,8 @@
+//! # output/grid
+//!
+//! Provides grid layout processing to arrange and display file entries in a grid (multiple columns)
+//! aligned to the terminal width.
+
 use terminal_size::{Width, terminal_size};
 
 use crate::output::render::RenderedEntry;
@@ -10,12 +15,25 @@ fn get_terminal_width() -> Option<usize> {
         .or_else(|| terminal_size().map(|(Width(w), _)| w as usize))
 }
 
+/// Arranges file entries in a grid layout based on the terminal width and writes the result to the output buffer.
+/// If the terminal width cannot be determined, it falls back to displaying all entries in a single row separated by spaces.
 pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut String) {
+    render_grid_with_width(entries, color_enabled, get_terminal_width(), out);
+}
+
+/// Internal helper that arranges file entries in a grid layout with an explicit terminal width parameter.
+/// If `term_width` is None, it falls back to displaying all entries in a single row separated by spaces.
+fn render_grid_with_width(
+    entries: &[RenderedEntry],
+    color_enabled: bool,
+    term_width: Option<usize>,
+    out: &mut String,
+) {
     if entries.is_empty() {
         return;
     }
 
-    let Some(term_width) = get_terminal_width() else {
+    let Some(term_width) = term_width else {
         // Fall back to printing everything in a single row (legacy/test behavior when terminal size is unavailable)
         for (idx, entry) in entries.iter().enumerate() {
             if idx > 0 {
@@ -41,16 +59,99 @@ pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut Str
             let idx = c * num_rows + r;
             if idx < entries.len() {
                 let entry = &entries[idx];
-                let rendered = apply_color(&entry.path, entry, color_enabled, false);
-                if c == num_cols - 1 || idx + num_rows >= entries.len() {
-                    out.push_str(&rendered);
-                } else {
-                    let padding = col_width.saturating_sub(entry.path.len());
-                    out.push_str(&rendered);
-                    out.push_str(&" ".repeat(padding));
-                }
+                let is_last_col = c == num_cols - 1 || idx + num_rows >= entries.len();
+                render_grid_cell(entry, color_enabled, col_width, is_last_col, out);
             }
         }
         out.push('\n');
+    }
+}
+
+fn render_grid_cell(
+    entry: &RenderedEntry,
+    color_enabled: bool,
+    col_width: usize,
+    is_last_col: bool,
+    out: &mut String,
+) {
+    let rendered = apply_color(&entry.path, entry, color_enabled, false);
+    if is_last_col {
+        out.push_str(&rendered);
+    } else {
+        let padding = col_width.saturating_sub(entry.path.len());
+        out.push_str(&rendered);
+        out.push_str(&" ".repeat(padding));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fs::file::EntryKind;
+    use crate::fs::git::GitKind;
+    use serial_test::serial;
+
+    fn dummy_entry(path: &str) -> RenderedEntry {
+        RenderedEntry {
+            path: path.to_string(),
+            kind: EntryKind::File,
+            git: GitKind::Clean,
+            mode: Some(0o100644),
+            uid: Some(0),
+            has_xattrs: false,
+            size: 0,
+            modified: None,
+            stages: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn test_render_grid_empty() {
+        let mut out = String::new();
+        render_grid(&[], false, &mut out);
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_render_grid_fallback_no_term_width() {
+        let entries = vec![dummy_entry("a"), dummy_entry("bb"), dummy_entry("ccc")];
+        let mut out = String::new();
+        render_grid_with_width(&entries, false, None, &mut out);
+
+        assert_eq!(out, "a  bb  ccc\n");
+    }
+
+    #[test]
+    #[serial]
+    fn test_render_grid_with_columns_env() {
+        let old_columns = std::env::var("COLUMNS");
+        unsafe {
+            std::env::set_var("COLUMNS", "20");
+        }
+
+        let entries = vec![
+            dummy_entry("a"),
+            dummy_entry("bb"),
+            dummy_entry("ccc"),
+            dummy_entry("d"),
+            dummy_entry("e"),
+        ];
+        let mut out = String::new();
+        render_grid(&entries, false, &mut out);
+
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0], "a    ccc  e");
+        assert_eq!(lines[1], "bb   d");
+
+        if let Ok(val) = old_columns {
+            unsafe {
+                std::env::set_var("COLUMNS", val);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("COLUMNS");
+            }
+        }
     }
 }

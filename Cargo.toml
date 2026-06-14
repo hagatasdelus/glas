@@ -1,6 +1,6 @@
 [package]
 name = "glas"
-version = "0.1.0-20260529dev"
+version = "0.1.0-20260612dev"
 edition = "2024"
 
 [dependencies]
@@ -21,3 +21,5 @@ xattr = "1.6.1"
 [dev-dependencies]
 assert_cmd = "2.2.1"
 tempfile = "3.27.0"
+trycmd = "1.0"
+serial_test = "3.1.1"

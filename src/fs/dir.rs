@@ -1,3 +1,7 @@
+//! # fs/dir
+//!
+//! Provides directory traversal functionality and collects file entries matching the `DirOptions` criteria.
+
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -69,6 +73,8 @@ fn matches_git_selectors(kind: GitKind, options: &DirOptions, has_git: bool) -> 
     matched
 }
 
+/// Traverses file and directory entries under the specified target path
+/// and collects those that match filters into a vector of `RenderedEntry`.
 pub fn collect_target_entries(
     target: &Path,
     dir_options: &DirOptions,

@@ -1,6 +1,5 @@
 use assert_cmd::Command;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command as StdCommand;
 use tempfile::TempDir;
@@ -73,71 +72,6 @@ fn full_name_prints_repo_relative_paths() {
 }
 
 #[test]
-fn null_output_is_nul_separated() {
-    let dir = TempDir::new().expect("temp dir");
-    fs::write(dir.path().join("a.txt"), "a\n").expect("write a");
-    fs::write(dir.path().join("file with space.txt"), "b\n").expect("write b");
-
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "-z", "--color=never"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    assert!(output.contains(&0), "stdout was: {:?}", output);
-    assert!(output.windows("a.txt\0".len()).any(|w| w == b"a.txt\0"));
-    assert!(
-        output
-            .windows("file with space.txt\0".len())
-            .any(|w| w == b"file with space.txt\0")
-    );
-}
-
-#[test]
-fn short_help_uses_question_mark() {
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd.arg("-?").assert().success().get_output().stdout.clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-    assert!(text.contains("USAGE:"), "stdout was: {text}");
-}
-
-#[test]
-fn short_h_is_header_not_help() {
-    let dir = TempDir::new().expect("temp dir");
-    fs::write(dir.path().join("a.txt"), "a\n").expect("write a");
-    fs::set_permissions(dir.path().join("a.txt"), fs::Permissions::from_mode(0o644))
-        .expect("set perms");
-
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "-l", "-h", "--color=never"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    let text = String::from_utf8(output).expect("utf8 output");
-    let first_line = text.lines().next().unwrap_or("");
-    assert!(
-        first_line.starts_with("GIT Permissions Size User"),
-        "stdout was: {text}"
-    );
-    assert!(
-        first_line.contains("Date Modified Name"),
-        "stdout was: {text}"
-    );
-
-    let second_line = text.lines().nth(1).unwrap_or("");
-    assert!(second_line.contains(".rw-r--r--"), "stdout was: {text}");
-}
-
-#[test]
 fn show_ignored_includes_ignored_files() {
     let repo = init_repo();
     fs::write(repo.path().join(".gitignore"), "ignored.log\n").expect("write gitignore");
@@ -157,29 +91,6 @@ fn show_ignored_includes_ignored_files() {
 
     let text = String::from_utf8(output).expect("utf8 output");
     assert!(text.contains("ignored.log"), "stdout was: {text}");
-}
-
-#[test]
-fn long_format_marks_xattr_with_at_sign() {
-    let dir = TempDir::new().expect("temp dir");
-    let file_path = dir.path().join("a.txt");
-    fs::write(&file_path, "a\n").expect("write a");
-    fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).expect("set perms");
-    xattr::set(&file_path, "com.glas.test", b"1").expect("set xattr");
-
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "-l", "--color=never"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    let text = String::from_utf8(output).expect("utf8 output");
-    let first_line = text.lines().next().unwrap_or("");
-    assert!(first_line.contains(".rw-r--r--@"), "stdout was: {text}");
 }
 
 #[test]
@@ -203,124 +114,6 @@ fn long_format_git_column_is_left_aligned() {
     let text = String::from_utf8(output).expect("utf8 output");
     let first_line = text.lines().next().unwrap_or("");
     assert!(first_line.starts_with("M"), "stdout was: {text}");
-}
-
-#[test]
-fn help_mentions_flatten_default_zero() {
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd.arg("-?").assert().success().get_output().stdout.clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-    assert!(
-        text.contains("flatten nested modified files [default: 0]"),
-        "stdout was: {text}"
-    );
-}
-
-#[test]
-fn short_help_uses_grouped_sections_without_arguments_block() {
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd.arg("-?").assert().success().get_output().stdout.clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-
-    assert!(!text.contains("Arguments:"), "stdout was: {text}");
-    assert!(text.contains("META OPTIONS"), "stdout was: {text}");
-    assert!(text.contains("DISPLAY OPTIONS"), "stdout was: {text}");
-    assert!(
-        text.contains("FILTERING AND SORTING OPTIONS"),
-        "stdout was: {text}"
-    );
-    assert!(text.contains("GIT-AWARE OPTIONS"), "stdout was: {text}");
-}
-
-#[test]
-fn short_help_mentions_only_short_flag() {
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd.arg("-?").assert().success().get_output().stdout.clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-    assert!(text.contains("-?"), "stdout was: {text}");
-    assert!(!text.contains("--cli-help"), "stdout was: {text}");
-    assert!(!text.contains("--help"), "stdout was: {text}");
-}
-
-#[test]
-fn long_cli_help_flag_is_rejected() {
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd
-        .arg("--cli-help")
-        .assert()
-        .failure()
-        .get_output()
-        .stderr
-        .clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-    assert!(
-        text.contains("unexpected argument '--cli-help'"),
-        "stderr was: {text}"
-    );
-}
-
-#[test]
-fn default_colors_match_long_for_clean_directories() {
-    let dir = TempDir::new().expect("temp dir");
-    fs::create_dir_all(dir.path().join("clean_dir")).expect("create clean dir");
-
-    let mut default_cmd = Command::cargo_bin("glas").expect("binary");
-    let default_output = default_cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "--color=always"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    let mut long_cmd = Command::cargo_bin("glas").expect("binary");
-    let long_output = long_cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "-l", "--color=always"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-
-    let text = String::from_utf8(default_output).expect("utf8 output");
-    let long_text = String::from_utf8(long_output).expect("utf8 output");
-    assert!(
-        text.contains("\u{1b}[34mclean_dir\u{1b}[39m"),
-        "stdout should color clean directory blue: {text:?}"
-    );
-    assert!(
-        long_text.contains("\u{1b}[34m"),
-        "long output should use same clean-directory color policy: {long_text:?}"
-    );
-}
-
-#[test]
-fn special_files_are_bold_in_default_output() {
-    let dir = TempDir::new().expect("temp dir");
-    fs::write(dir.path().join("Cargo.toml"), "[package]\nname='x'\n").expect("write cargo");
-    fs::write(dir.path().join("justfile"), "default:\n\t@echo ok\n").expect("write justfile");
-
-    let mut cmd = Command::cargo_bin("glas").expect("binary");
-    let output = cmd
-        .current_dir(dir.path())
-        .args(["--no-git", "--color=always"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let text = String::from_utf8(output).expect("utf8 output");
-
-    assert!(
-        text.contains("\u{1b}[1mCargo.toml\u{1b}[0m"),
-        "Cargo.toml should be bold: {text:?}"
-    );
-    assert!(
-        text.contains("\u{1b}[1mjustfile\u{1b}[0m"),
-        "justfile should be bold: {text:?}"
-    );
 }
 
 #[test]

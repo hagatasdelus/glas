@@ -1,3 +1,8 @@
+//! # options
+//!
+//! This module provides configuration options, including command-line argument parsing (`cli`),
+//! filtering/display configuration (`config`), and output layout determination (`layout`).
+
 pub mod cli;
 pub mod config;
 pub mod layout;

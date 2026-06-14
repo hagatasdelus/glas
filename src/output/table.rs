@@ -1,3 +1,8 @@
+//! # output/table
+//!
+//! Provides functionality for writing file entries to standard output.
+//! Supports grid view, single-column view, detailed table view, and custom format view.
+
 use anyhow::{Context, Result};
 use rustc_hash::FxHashMap;
 use std::io::{self, Write};
@@ -102,6 +107,8 @@ impl<'a> TableRenderer<'a> {
     }
 }
 
+/// Formats and writes the sorted list of `RenderedEntry` to standard output (stdout)
+/// according to the specified output layout mode (grid, long table, single line, custom format, etc.).
 pub fn write_output(
     entries: &[RenderedEntry],
     options: &RenderOptions,

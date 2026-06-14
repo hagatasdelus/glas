@@ -1,3 +1,8 @@
+//! # glas
+//!
+//! `glas` is a Git-status-aware modern replacement for the `ls` command.
+//! It displays file permissions, size, modification time, and Git status in a colorful list.
+
 mod fs;
 mod info;
 mod options;
@@ -13,6 +18,8 @@ use fs::collect_target_entries;
 use options::{Cli, ColorWhen, DirOptions, RenderOptions, resolve_layout_mode};
 use output::{sort_entries, write_output};
 
+/// The main entry point of the `glas` command.
+/// Parses command-line arguments and displays the contents of the specified directories.
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     run_with_cli(cli)
