@@ -351,3 +351,28 @@ fn git_ls_files_flatten_all_behavior() {
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("dir1/dir2/dir3/file.txt"));
 }
+
+#[test]
+fn git_clean_directories_are_listed() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("clean_dir")).expect("create dir");
+    fs::write(repo.path().join("clean_dir/file.txt"), "hello").expect("write file");
+    git(repo.path(), &["add", "clean_dir/file.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "add file"]);
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        text.contains("clean_dir"),
+        "clean_dir should be listed, stdout was: {text}"
+    );
+}

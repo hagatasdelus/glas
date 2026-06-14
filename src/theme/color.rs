@@ -25,9 +25,11 @@ pub fn apply_color(
         .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or(&entry.path);
-    let is_special_file = filename == "Cargo.toml" || filename == "justfile";
+    let is_special_file = filename == "Cargo.toml"
+        || filename == "justfile"
+        || (filename.starts_with("README") && filename.ends_with(".md"));
 
-    match entry.git {
+    let colored = match entry.git {
         GitKind::Conflicted => rendered.red().to_string(),
         GitKind::Staged => rendered.green().to_string(),
         GitKind::Modified => rendered.yellow().to_string(),
@@ -37,12 +39,16 @@ pub fn apply_color(
         GitKind::Clean => {
             if entry.kind == crate::fs::file::EntryKind::Directory {
                 rendered.blue().to_string()
-            } else if is_special_file {
-                format!("\u{1b}[1m{}\u{1b}[0m", rendered)
             } else {
                 rendered.to_string()
             }
         }
+    };
+
+    if is_special_file && entry.kind != crate::fs::file::EntryKind::Directory {
+        format!("\u{1b}[1m{}\u{1b}[0m", colored)
+    } else {
+        colored
     }
 }
 
