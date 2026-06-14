@@ -34,7 +34,12 @@ fn long_format_marks_xattr_with_at_sign() {
     let file_path = dir.path().join("a.txt");
     fs::write(&file_path, "a\n").expect("write a");
     fs::set_permissions(&file_path, fs::Permissions::from_mode(0o644)).expect("set perms");
-    xattr::set(&file_path, "com.glas.test", b"1").expect("set xattr");
+
+    // Skip test if xattrs are not supported on this filesystem
+    if xattr::set(&file_path, "com.glas.test", b"1").is_err() {
+        eprintln!("Skipping test: xattrs not supported on this filesystem");
+        return;
+    }
 
     let mut cmd = Command::cargo_bin("glas").expect("binary");
     let output = cmd

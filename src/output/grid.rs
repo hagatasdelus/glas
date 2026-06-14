@@ -18,11 +18,22 @@ fn get_terminal_width() -> Option<usize> {
 /// Arranges file entries in a grid layout based on the terminal width and writes the result to the output buffer.
 /// If the terminal width cannot be determined, it falls back to displaying all entries in a single row separated by spaces.
 pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut String) {
+    render_grid_with_width(entries, color_enabled, get_terminal_width(), out);
+}
+
+/// Internal helper that arranges file entries in a grid layout with an explicit terminal width parameter.
+/// If `term_width` is None, it falls back to displaying all entries in a single row separated by spaces.
+fn render_grid_with_width(
+    entries: &[RenderedEntry],
+    color_enabled: bool,
+    term_width: Option<usize>,
+    out: &mut String,
+) {
     if entries.is_empty() {
         return;
     }
 
-    let Some(term_width) = get_terminal_width() else {
+    let Some(term_width) = term_width else {
         // Fall back to printing everything in a single row (legacy/test behavior when terminal size is unavailable)
         for (idx, entry) in entries.iter().enumerate() {
             if idx > 0 {
@@ -102,24 +113,12 @@ mod tests {
     }
 
     #[test]
-    #[serial]
     fn test_render_grid_fallback_no_term_width() {
-        let old_columns = std::env::var("COLUMNS");
-        unsafe {
-            std::env::remove_var("COLUMNS");
-        }
-
         let entries = vec![dummy_entry("a"), dummy_entry("bb"), dummy_entry("ccc")];
         let mut out = String::new();
-        render_grid(&entries, false, &mut out);
+        render_grid_with_width(&entries, false, None, &mut out);
 
         assert_eq!(out, "a  bb  ccc\n");
-
-        if let Ok(val) = old_columns {
-            unsafe {
-                std::env::set_var("COLUMNS", val);
-            }
-        }
     }
 
     #[test]

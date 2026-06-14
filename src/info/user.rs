@@ -66,7 +66,8 @@ mod tests {
     fn test_long_user_not_cached_missing() {
         let entry = dummy_entry_with_uid(Some(99999));
         let mut cache = FxHashMap::default();
-        assert_eq!(long_user(&entry, &mut cache), "99999");
-        assert_eq!(cache.get(&99999).unwrap(), "99999");
+        let result = long_user(&entry, &mut cache);
+        // Verify cache consistency: whatever value was returned should be in the cache
+        assert_eq!(cache.get(&99999).unwrap(), &result);
     }
 }

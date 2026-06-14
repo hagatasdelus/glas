@@ -20,7 +20,12 @@ pub fn apply_color(
         return rendered.to_string();
     }
 
-    let is_special_file = entry.path == "Cargo.toml" || entry.path == "justfile";
+    // Extract the filename (basename) from the path for special file detection
+    let filename = std::path::Path::new(&entry.path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(&entry.path);
+    let is_special_file = filename == "Cargo.toml" || filename == "justfile";
 
     match entry.git {
         GitKind::Conflicted => rendered.red().to_string(),
