@@ -212,6 +212,16 @@ pub fn apply_git_overlay(
         if let Some(stages) = git.stages.get(&entry.abs_path) {
             entry.stages = stages.clone();
         }
+        if entry
+            .abs_path
+            .strip_prefix(&git.repo_root)
+            .map(|repo_rel| {
+                !repo_rel.as_os_str().is_empty() && !git.statuses.contains_key(repo_rel)
+            })
+            .unwrap_or(false)
+        {
+            entry.git = GitKind::Ignored;
+        }
     }
 
     for (repo_rel, git_kind) in &git.statuses {

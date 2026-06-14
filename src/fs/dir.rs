@@ -88,7 +88,7 @@ pub fn collect_target_entries(
         None
     } else {
         let target_for_thread = target_abs.clone();
-        let show_ignored = true;
+        let show_ignored = dir_options.include_ignored || dir_options.ignored;
         Some(thread::spawn(move || {
             load_git_context(&target_for_thread, show_ignored)
         }))
