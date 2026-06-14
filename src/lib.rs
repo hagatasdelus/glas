@@ -124,7 +124,13 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn tty_default_renderer_outputs_single_row() {
+        let old_columns = std::env::var("COLUMNS");
+        unsafe {
+            std::env::set_var("COLUMNS", "9999");
+        }
+
         let entries = vec![
             dummy_entry("Cargo.lock"),
             dummy_entry("Cargo.toml"),
@@ -136,6 +142,17 @@ mod tests {
         ];
         let mut out = String::new();
         render_grid(&entries, false, &mut out);
+
+        if let Ok(val) = old_columns {
+            unsafe {
+                std::env::set_var("COLUMNS", val);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("COLUMNS");
+            }
+        }
+
         assert_eq!(out.lines().count(), 1, "output was: {out:?}");
     }
 

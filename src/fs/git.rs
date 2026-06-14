@@ -329,18 +329,31 @@ pub fn apply_git_overlay(
         }
     }
 
+    let mut modified_dirs = FxHashSet::default();
+    for (repo_rel, git_kind) in &git.statuses {
+        if *git_kind == GitKind::Clean {
+            continue;
+        }
+        let abs = git.repo_root.join(repo_rel);
+        if !abs.starts_with(target_abs) {
+            continue;
+        }
+        let mut curr = abs.parent();
+        while let Some(parent) = curr {
+            if parent == target_abs || !parent.starts_with(target_abs) {
+                break;
+            }
+            modified_dirs.insert(parent.to_path_buf());
+            curr = parent.parent();
+        }
+    }
+
     for entry in entries.iter_mut() {
         if !matches!(entry.kind, EntryKind::Directory) || !matches!(entry.git, GitKind::Clean) {
             continue;
         }
 
-        let mut dir_rel = entry.rel_to_target.clone();
-        dir_rel.push("");
-        if git.statuses.keys().any(|repo_rel| {
-            git.repo_root
-                .join(repo_rel)
-                .starts_with(target_abs.join(&dir_rel))
-        }) {
+        if modified_dirs.contains(&entry.abs_path) {
             entry.git = GitKind::Modified;
         }
     }
