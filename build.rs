@@ -6,14 +6,24 @@ use std::process::Command;
 use time::OffsetDateTime;
 
 fn main() -> io::Result<()> {
+    println!("cargo:rerun-if-changed=.git/HEAD");
+    if let Ok(head_ref) = std::fs::read_to_string(".git/HEAD") {
+        if head_ref.starts_with("ref:") {
+            let ref_path = head_ref.trim_start_matches("ref:").trim();
+            println!("cargo:rerun-if-changed=.git/{}", ref_path);
+        }
+    }
+
     let tagline = "glas - A Git-aware ls alternative";
     let url = "https://github.com/hagatasdelus/glas";
 
     let ver = if is_debug_build() {
         format!(
-            "{}\nv{} (pre-release debug build!)\n{}",
+            "{}\nv{} [{}] built on {} (pre-release debug build!)\n{}",
             tagline,
             version_string(),
+            git_hash(),
+            build_date(),
             url
         )
     } else if is_development_version() {
@@ -55,7 +65,7 @@ fn git_hash() -> String {
 }
 
 fn is_development_version() -> bool {
-    cargo_version().ends_with("-pre") || env::var("PROFILE").unwrap_or_default() == "debug"
+    cargo_version().ends_with("-pre")
 }
 
 fn is_debug_build() -> bool {
