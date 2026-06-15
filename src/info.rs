@@ -1,3 +1,8 @@
+//! # info
+//!
+//! Provides formatting helpers for extracting file metadata details such as permissions,
+//! human-readable sizes, timestamps, and owner username.
+
 pub mod perms;
 pub mod size;
 pub mod time;

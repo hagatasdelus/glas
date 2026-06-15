@@ -72,9 +72,9 @@ GIT-AWARE OPTIONS
       --full-name            output paths relative to the project top directory
 ```
 
-## Lisence
+## License
 
-MIT Lisence
+MIT License
 
 ## Author
 

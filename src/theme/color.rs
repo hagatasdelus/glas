@@ -10,14 +10,14 @@ use crate::output::render::RenderedEntry;
 
 /// Applies ANSI escape colors and styles (e.g., bold) to a rendered string of a file entry
 /// based on its Git status, entry type, or special file patterns.
-pub fn apply_color(
-    rendered: &str,
+pub fn apply_color<'a>(
+    rendered: &'a str,
     entry: &RenderedEntry,
     color_enabled: bool,
     _long: bool,
-) -> String {
+) -> std::borrow::Cow<'a, str> {
     if !color_enabled {
-        return rendered.to_string();
+        return std::borrow::Cow::Borrowed(rendered);
     }
 
     // Extract the filename (basename) from the path for special file detection
@@ -30,23 +30,23 @@ pub fn apply_color(
         || (filename.starts_with("README") && filename.ends_with(".md"));
 
     let colored = match entry.git {
-        GitKind::Conflicted => rendered.red().to_string(),
-        GitKind::Staged => rendered.green().to_string(),
-        GitKind::Modified => rendered.yellow().to_string(),
-        GitKind::Deleted => rendered.red().to_string(),
-        GitKind::Untracked => rendered.cyan().to_string(),
-        GitKind::Ignored => rendered.bright_black().to_string(),
+        GitKind::Conflicted => std::borrow::Cow::Owned(rendered.red().to_string()),
+        GitKind::Staged => std::borrow::Cow::Owned(rendered.green().to_string()),
+        GitKind::Modified => std::borrow::Cow::Owned(rendered.yellow().to_string()),
+        GitKind::Deleted => std::borrow::Cow::Owned(rendered.red().to_string()),
+        GitKind::Untracked => std::borrow::Cow::Owned(rendered.cyan().to_string()),
+        GitKind::Ignored => std::borrow::Cow::Owned(rendered.bright_black().to_string()),
         GitKind::Clean => {
             if entry.kind == crate::fs::file::EntryKind::Directory {
-                rendered.blue().to_string()
+                std::borrow::Cow::Owned(rendered.blue().to_string())
             } else {
-                rendered.to_string()
+                std::borrow::Cow::Borrowed(rendered)
             }
         }
     };
 
     if is_special_file && entry.kind != crate::fs::file::EntryKind::Directory {
-        format!("\u{1b}[1m{}\u{1b}[0m", colored)
+        std::borrow::Cow::Owned(format!("\u{1b}[1m{}\u{1b}[0m", colored))
     } else {
         colored
     }

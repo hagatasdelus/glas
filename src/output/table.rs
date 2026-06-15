@@ -103,7 +103,7 @@ impl<'a> TableRenderer<'a> {
             user_width = self.widths.user,
             modified_width = self.widths.modified
         );
-        apply_color(&rendered, entry, self.color_enabled, self.options.long)
+        apply_color(&rendered, entry, self.color_enabled, self.options.long).into_owned()
     }
 }
 
@@ -128,7 +128,7 @@ pub fn write_output(
                 for stage_info in &entry.stages {
                     let path = apply_color(&entry.path, entry, color_enabled, options.long);
                     let line = format!(
-                        "{:06o} {} {} {}",
+                        "{:06o} {} {}\t{}",
                         stage_info.mode, stage_info.object_id, stage_info.stage, path
                     );
                     out.push_str(&line);

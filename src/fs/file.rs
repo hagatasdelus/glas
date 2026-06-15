@@ -67,12 +67,12 @@ impl Entry {
 
         #[cfg(unix)]
         let mode = metadata.mode();
-        #[cfg(windows)]
+        #[cfg(not(unix))]
         let mode = if metadata.is_dir() { 0o40755 } else { 0o100644 };
 
         #[cfg(unix)]
         let uid = metadata.uid();
-        #[cfg(windows)]
+        #[cfg(not(unix))]
         let uid = 0;
 
         let has_xattrs = include_xattrs && has_extended_attributes(&abs_path);
@@ -145,20 +145,8 @@ pub fn absolutize(path: &Path) -> Result<PathBuf> {
             .join(path)
     };
 
-    match fs::canonicalize(&joined) {
-        Ok(path) => {
-            #[cfg(windows)]
-            {
-                let path_str = path.to_string_lossy();
-                if path_str.starts_with(r"\\?\") {
-                    Ok(PathBuf::from(&path_str[4..]))
-                } else {
-                    Ok(path)
-                }
-            }
-            #[cfg(not(windows))]
-            Ok(path)
-        }
+    match dunce::canonicalize(&joined) {
+        Ok(path) => Ok(path),
         Err(_) => Ok(joined),
     }
 }

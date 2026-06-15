@@ -4,6 +4,7 @@
 //! and mapping it to file entries.
 
 use anyhow::{Context, Result};
+#[cfg(feature = "git")]
 use git2::{Repository, Status, StatusOptions};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::fs;
@@ -31,6 +32,7 @@ pub enum GitKind {
     Clean,
 }
 
+#[cfg(feature = "git")]
 impl GitKind {
     pub fn from_status(status: Status) -> Self {
         if status.is_conflicted() {
@@ -65,7 +67,9 @@ impl GitKind {
 
         Self::Clean
     }
+}
 
+impl GitKind {
     pub fn rank(self) -> u8 {
         match self {
             Self::Conflicted => 0,
@@ -121,9 +125,14 @@ pub struct GitContext {
     pub stages: FxHashMap<PathBuf, Vec<StageInfo>>,
 }
 
+fn normalize_path(path: &Path) -> PathBuf {
+    path.components().collect()
+}
+
 /// Detects a Git repository from the specified absolute path, and loads context
 /// information (statuses, index/stages, etc.) for that repository.
 /// Returns `Ok(None)` if the path is not part of a Git repository.
+#[cfg(feature = "git")]
 pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<GitContext>> {
     let repo = match Repository::discover(target_abs) {
         Ok(repo) => repo,
@@ -141,8 +150,8 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     if let Ok(index) = repo.index() {
         for entry in index.iter() {
             let path_str = String::from_utf8_lossy(&entry.path);
-            let repo_rel = PathBuf::from(path_str.as_ref());
-            let abs_path = repo_root.join(&repo_rel);
+            let repo_rel = normalize_path(&PathBuf::from(path_str.as_ref()));
+            let abs_path = normalize_path(&repo_root.join(&repo_rel));
             let stage = ((entry.flags & 0x3000) >> 12) as i32;
             let info = StageInfo {
                 mode: entry.mode,
@@ -175,7 +184,7 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
         if kind == GitKind::Clean {
             continue;
         }
-        let key = PathBuf::from(path);
+        let key = normalize_path(&PathBuf::from(path));
         if let Some(existing) = status_map.get(&key).copied() {
             status_map.insert(key, existing.merge(kind));
         } else {
@@ -190,6 +199,7 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     }))
 }
 
+#[cfg(feature = "git")]
 fn merge_or_insert_deleted(
     abs: PathBuf,
     rel: PathBuf,
@@ -215,6 +225,7 @@ fn merge_or_insert_deleted(
     }
 }
 
+#[cfg(feature = "git")]
 fn add_ignored_recursive(
     dir_path: &Path,
     target_abs: &Path,
@@ -283,6 +294,7 @@ fn add_ignored_recursive(
 
 /// Applies and integrates Git context information (status and stages) into the collected file entries,
 /// and reconstructs the entry list based on Git filtering rules and flattening configuration.
+#[cfg(feature = "git")]
 pub fn apply_git_overlay(
     entries: &mut Vec<Entry>,
     target_abs: &Path,
@@ -530,4 +542,83 @@ pub fn apply_git_overlay(
     }
 
     Ok(())
+}
+
+#[cfg(not(feature = "git"))]
+pub fn load_git_context(_target_abs: &Path, _show_ignored: bool) -> Result<Option<GitContext>> {
+    Ok(None)
+}
+
+#[cfg(not(feature = "git"))]
+pub fn apply_git_overlay(
+    _entries: &mut Vec<Entry>,
+    _target_abs: &Path,
+    _git: &GitContext,
+    _options: &DirOptions,
+) -> Result<()> {
+    Ok(())
+}
+
+#[cfg(all(test, feature = "git"))]
+mod tests {
+    use super::*;
+    use crate::fs::file::EntryKind;
+    use crate::options::DirOptions;
+
+    #[test]
+    fn test_normalize_path() {
+        let path = Path::new("foo/bar/baz");
+        let normalized = normalize_path(path);
+
+        #[cfg(windows)]
+        assert_eq!(normalized, PathBuf::from("foo\\bar\\baz"));
+        #[cfg(not(windows))]
+        assert_eq!(normalized, PathBuf::from("foo/bar/baz"));
+    }
+
+    #[test]
+    fn test_apply_git_overlay_basic() {
+        let repo_root = PathBuf::from("/repo");
+        let target_abs = PathBuf::from("/repo/src");
+
+        let mut statuses = FxHashMap::default();
+        statuses.insert(PathBuf::from("src/main.rs"), GitKind::Modified);
+
+        let git = GitContext {
+            repo_root,
+            statuses,
+            stages: FxHashMap::default(),
+        };
+
+        let options = DirOptions {
+            all: false,
+            long: false,
+            flatten: crate::options::config::FlattenDepth::Depth(0),
+            treat_dirs_as_files: false,
+            only_dirs: false,
+            only_files: false,
+            stage: false,
+            cached: false,
+            ..Default::default()
+        };
+
+        // Create a dummy entry for main.rs
+        let mut entries = vec![Entry {
+            abs_path: PathBuf::from("/repo/src/main.rs"),
+            rel_to_target: PathBuf::from("main.rs"),
+            kind: EntryKind::File,
+            git: GitKind::Clean,
+            mode: 0o100644,
+            uid: 0,
+            has_xattrs: false,
+            size: 100,
+            modified: None,
+            stages: Vec::new(),
+        }];
+
+        apply_git_overlay(&mut entries, &target_abs, &git, &options).unwrap();
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].git, GitKind::Modified);
+    }
 }
