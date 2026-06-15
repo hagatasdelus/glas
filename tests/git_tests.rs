@@ -460,3 +460,30 @@ fn test_ignored_directory_flatten() {
     );
 }
 
+#[test]
+fn test_stage_only_lists_staged_files() {
+    let repo = init_repo();
+    fs::write(repo.path().join("tracked.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "tracked.txt"]);
+
+    fs::create_dir_all(repo.path().join("untracked_dir")).unwrap();
+    fs::write(repo.path().join("untracked_dir/untracked.txt"), "hello untracked").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--stage", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(text.contains("tracked.txt"), "should contain tracked file: {text}");
+    assert!(text.contains("100644"), "should contain file mode: {text}");
+    assert!(!text.contains("untracked_dir"), "should not contain untracked directory: {text}");
+    assert!(!text.contains("untracked.txt"), "should not contain untracked file: {text}");
+}
+
+

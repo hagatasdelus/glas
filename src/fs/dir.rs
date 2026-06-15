@@ -94,7 +94,72 @@ pub fn collect_target_entries(
         }))
     };
 
-    let mut entries = if target_meta.is_dir() && !dir_options.treat_dirs_as_files {
+    let git_context = if let Some(handle) = git_handle {
+        handle
+            .join()
+            .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
+    } else {
+        None
+    };
+
+    let mut entries = if dir_options.stage {
+        let mut stage_entries = Vec::new();
+        if let Some(git) = git_context.as_ref() {
+            for (abs_path, stages) in &git.stages {
+                if abs_path.starts_with(&target_abs) {
+                    let rel = match abs_path.strip_prefix(&target_abs) {
+                        Ok(p) => p.to_path_buf(),
+                        _ => continue,
+                    };
+                    if rel.as_os_str().is_empty() {
+                        let rel = abs_path
+                            .file_name()
+                            .map(PathBuf::from)
+                            .unwrap_or_else(|| PathBuf::from("."));
+                        let mut entry = Entry::new_file_or_dir(
+                            abs_path.clone(),
+                            rel,
+                            target_meta.clone(),
+                            dir_options.long,
+                        );
+                        entry.stages = stages.clone();
+                        if let Ok(repo_rel) = abs_path.strip_prefix(&git.repo_root) {
+                            if let Some(kind) = git.statuses.get(repo_rel) {
+                                entry.git = *kind;
+                            }
+                        }
+                        stage_entries.push(entry);
+                    } else {
+                        let entry = match fs::symlink_metadata(abs_path) {
+                            Ok(meta) => {
+                                let mut entry = Entry::new_file_or_dir(
+                                    abs_path.clone(),
+                                    rel,
+                                    meta,
+                                    dir_options.long,
+                                );
+                                entry.stages = stages.clone();
+                                if let Ok(repo_rel) = abs_path.strip_prefix(&git.repo_root) {
+                                    if let Some(kind) = git.statuses.get(repo_rel) {
+                                        entry.git = *kind;
+                                    }
+                                }
+                                entry
+                            }
+                            Err(_) => {
+                                let mut entry = Entry::new_deleted(abs_path.clone(), rel);
+                                entry.stages = stages.clone();
+                                entry.git = GitKind::Deleted;
+                                entry
+                            }
+                        };
+                        stage_entries.push(entry);
+                    }
+                }
+            }
+        }
+        stage_entries
+    } else if target_meta.is_dir() && !dir_options.treat_dirs_as_files {
         collect_directory_entries(&target_abs, dir_options)?
     } else {
         let rel = target_abs
@@ -109,16 +174,10 @@ pub fn collect_target_entries(
         )]
     };
 
-    let git_context = if let Some(handle) = git_handle {
-        handle
-            .join()
-            .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
-    } else {
-        None
-    };
-
     if let Some(git) = git_context.as_ref() {
-        apply_git_overlay(&mut entries, &target_abs, git, dir_options)?;
+        if !dir_options.stage {
+            apply_git_overlay(&mut entries, &target_abs, git, dir_options)?;
+        }
     }
 
     let has_git = git_context.is_some();
