@@ -44,10 +44,8 @@ fn git_hash() -> Option<String> {
 }
 
 fn is_debug_build() -> bool {
-    let no_opt = env::var("OPT_LEVEL").map_or(false, |v| v == "0");
-    let has_debug_info = env::var("DEBUG").map_or(false, |v| v != "0" && v != "false");
-
-    no_opt || has_debug_info
+    env::var("OPT_LEVEL").is_ok_and(|v| v == "0")
+        || env::var("DEBUG").is_ok_and(|v| v != "0" && v != "false")
 }
 
 fn is_development_version() -> bool {
@@ -71,7 +69,7 @@ fn version_string() -> String {
 
 fn feature_enabled(name: &str) -> bool {
     env::var(format!("CARGO_FEATURE_{}", name.to_uppercase()))
-        .map_or(false, |e| !e.is_empty())
+        .is_ok_and(|e| !e.is_empty())
 }
 
 fn nonstandard_features_string() -> String {
