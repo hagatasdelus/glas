@@ -123,10 +123,12 @@ pub fn collect_target_entries(
                             dir_options.long,
                         );
                         entry.stages = stages.clone();
-                        if let Ok(repo_rel) = abs_path.strip_prefix(&git.repo_root) {
-                            if let Some(kind) = git.statuses.get(repo_rel) {
-                                entry.git = *kind;
-                            }
+                        if let Some(kind) = abs_path
+                            .strip_prefix(&git.repo_root)
+                            .ok()
+                            .and_then(|repo_rel| git.statuses.get(repo_rel))
+                        {
+                            entry.git = *kind;
                         }
                         stage_entries.push(entry);
                     } else {
@@ -139,10 +141,12 @@ pub fn collect_target_entries(
                                     dir_options.long,
                                 );
                                 entry.stages = stages.clone();
-                                if let Ok(repo_rel) = abs_path.strip_prefix(&git.repo_root) {
-                                    if let Some(kind) = git.statuses.get(repo_rel) {
-                                        entry.git = *kind;
-                                    }
+                                if let Some(kind) = abs_path
+                                    .strip_prefix(&git.repo_root)
+                                    .ok()
+                                    .and_then(|repo_rel| git.statuses.get(repo_rel))
+                                {
+                                    entry.git = *kind;
                                 }
                                 entry
                             }
@@ -174,10 +178,8 @@ pub fn collect_target_entries(
         )]
     };
 
-    if let Some(git) = git_context.as_ref() {
-        if !dir_options.stage {
-            apply_git_overlay(&mut entries, &target_abs, git, dir_options)?;
-        }
+    if let Some(git) = git_context.as_ref().filter(|_| !dir_options.stage) {
+        apply_git_overlay(&mut entries, &target_abs, git, dir_options)?;
     }
 
     let has_git = git_context.is_some();

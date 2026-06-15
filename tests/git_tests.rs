@@ -467,7 +467,11 @@ fn test_stage_only_lists_staged_files() {
     git(repo.path(), &["add", "tracked.txt"]);
 
     fs::create_dir_all(repo.path().join("untracked_dir")).unwrap();
-    fs::write(repo.path().join("untracked_dir/untracked.txt"), "hello untracked").unwrap();
+    fs::write(
+        repo.path().join("untracked_dir/untracked.txt"),
+        "hello untracked",
+    )
+    .unwrap();
 
     let mut cmd = Command::cargo_bin("glas").expect("binary");
     let output = cmd
@@ -480,10 +484,48 @@ fn test_stage_only_lists_staged_files() {
         .clone();
 
     let text = String::from_utf8(output).unwrap();
-    assert!(text.contains("tracked.txt"), "should contain tracked file: {text}");
+    assert!(
+        text.contains("tracked.txt"),
+        "should contain tracked file: {text}"
+    );
     assert!(text.contains("100644"), "should contain file mode: {text}");
-    assert!(!text.contains("untracked_dir"), "should not contain untracked directory: {text}");
-    assert!(!text.contains("untracked.txt"), "should not contain untracked file: {text}");
+    assert!(
+        !text.contains("untracked_dir"),
+        "should not contain untracked directory: {text}"
+    );
+    assert!(
+        !text.contains("untracked.txt"),
+        "should not contain untracked file: {text}"
+    );
 }
 
+#[test]
+fn test_cached_only_lists_files() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("subdir")).unwrap();
+    fs::write(repo.path().join("subdir/tracked.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "subdir/tracked.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "init"]);
 
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--cached", "--flatten", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        text.contains("subdir/tracked.txt") || text.contains("tracked.txt"),
+        "should contain tracked file: {text}"
+    );
+    // By default eza/glas lists directories as well, but with --cached it should NOT contain directories like 'subdir' as a standalone entry
+    let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        !lines.contains(&"subdir"),
+        "should not list directory standalone: {text}"
+    );
+}

@@ -267,27 +267,16 @@ fn add_ignored_recursive(
                 entries.push(entry);
             }
 
-            add_ignored_recursive(
-                &path,
-                target_abs,
-                git,
-                options,
-                by_abs,
-                seen_paths,
-                entries,
-            );
-        } else {
-            if !seen_paths.contains(&path) {
-                let mut entry =
-                    Entry::new_file_or_dir(path.clone(), rel, metadata, options.long);
-                entry.git = GitKind::Ignored;
-                if let Some(stages) = git.stages.get(&path) {
-                    entry.stages = stages.clone();
-                }
-                by_abs.insert(path.clone(), entries.len());
-                seen_paths.insert(path.clone());
-                entries.push(entry);
+            add_ignored_recursive(&path, target_abs, git, options, by_abs, seen_paths, entries);
+        } else if !seen_paths.contains(&path) {
+            let mut entry = Entry::new_file_or_dir(path.clone(), rel, metadata, options.long);
+            entry.git = GitKind::Ignored;
+            if let Some(stages) = git.stages.get(&path) {
+                entry.stages = stages.clone();
             }
+            by_abs.insert(path.clone(), entries.len());
+            seen_paths.insert(path.clone());
+            entries.push(entry);
         }
     }
 }
@@ -355,25 +344,25 @@ pub fn apply_git_overlay(
             continue;
         }
 
-        if *git_kind == GitKind::Ignored {
-            if let Ok(meta) = fs::symlink_metadata(&abs) {
-                if meta.is_dir() {
-                    let has_flatten = match options.flatten {
-                        FlattenDepth::All => true,
-                        FlattenDepth::Depth(d) => d > 0,
-                    };
-                    if has_flatten {
-                        add_ignored_recursive(
-                            &abs,
-                            target_abs,
-                            git,
-                            options,
-                            &mut by_abs,
-                            &mut seen_paths,
-                            entries,
-                        );
-                    }
-                }
+        if *git_kind == GitKind::Ignored
+            && fs::symlink_metadata(&abs)
+                .map(|m| m.is_dir())
+                .unwrap_or(false)
+        {
+            let has_flatten = match options.flatten {
+                FlattenDepth::All => true,
+                FlattenDepth::Depth(d) => d > 0,
+            };
+            if has_flatten {
+                add_ignored_recursive(
+                    &abs,
+                    target_abs,
+                    git,
+                    options,
+                    &mut by_abs,
+                    &mut seen_paths,
+                    entries,
+                );
             }
         }
 

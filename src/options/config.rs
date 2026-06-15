@@ -76,13 +76,15 @@ impl DirOptions {
 
         let git_select_mode = cached || stage || deleted || modified || others || ignored;
 
+        let only_files = cli.only_files || cached || stage;
+
         Self {
             no_git: cli.no_git,
             treat_dirs_as_files: cli.treat_dirs_as_files,
             long: cli.long,
             all: cli.all,
             only_dirs: cli.only_dirs,
-            only_files: cli.only_files,
+            only_files,
             cached,
             stage,
             deleted,
