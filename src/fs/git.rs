@@ -215,6 +215,83 @@ fn merge_or_insert_deleted(
     }
 }
 
+fn add_ignored_recursive(
+    dir_path: &Path,
+    target_abs: &Path,
+    git: &GitContext,
+    options: &DirOptions,
+    by_abs: &mut FxHashMap<PathBuf, usize>,
+    seen_paths: &mut FxHashSet<PathBuf>,
+    entries: &mut Vec<Entry>,
+) {
+    let Ok(dir_iter) = fs::read_dir(dir_path) else {
+        return;
+    };
+
+    for item in dir_iter.flatten() {
+        let path = item.path();
+        let Ok(metadata) = fs::symlink_metadata(&path) else {
+            continue;
+        };
+
+        let rel = match path.strip_prefix(target_abs) {
+            Ok(p) => p.to_path_buf(),
+            _ => continue,
+        };
+
+        if !options.all && is_hidden_path(&rel) {
+            continue;
+        }
+
+        let depth = rel.components().count();
+        let should_flatten = match options.flatten {
+            FlattenDepth::All => true,
+            FlattenDepth::Depth(d) => depth <= d.saturating_add(1),
+        };
+
+        if !should_flatten {
+            continue;
+        }
+
+        if metadata.is_dir() {
+            if !seen_paths.contains(&path) {
+                let mut entry = Entry::new_file_or_dir(
+                    path.clone(),
+                    rel.clone(),
+                    metadata.clone(),
+                    options.long,
+                );
+                entry.git = GitKind::Ignored;
+                by_abs.insert(path.clone(), entries.len());
+                seen_paths.insert(path.clone());
+                entries.push(entry);
+            }
+
+            add_ignored_recursive(
+                &path,
+                target_abs,
+                git,
+                options,
+                by_abs,
+                seen_paths,
+                entries,
+            );
+        } else {
+            if !seen_paths.contains(&path) {
+                let mut entry =
+                    Entry::new_file_or_dir(path.clone(), rel, metadata, options.long);
+                entry.git = GitKind::Ignored;
+                if let Some(stages) = git.stages.get(&path) {
+                    entry.stages = stages.clone();
+                }
+                by_abs.insert(path.clone(), entries.len());
+                seen_paths.insert(path.clone());
+                entries.push(entry);
+            }
+        }
+    }
+}
+
 /// Applies and integrates Git context information (status and stages) into the collected file entries,
 /// and reconstructs the entry list based on Git filtering rules and flattening configuration.
 pub fn apply_git_overlay(
@@ -276,6 +353,28 @@ pub fn apply_git_overlay(
 
         if options.treat_dirs_as_files {
             continue;
+        }
+
+        if *git_kind == GitKind::Ignored {
+            if let Ok(meta) = fs::symlink_metadata(&abs) {
+                if meta.is_dir() {
+                    let has_flatten = match options.flatten {
+                        FlattenDepth::All => true,
+                        FlattenDepth::Depth(d) => d > 0,
+                    };
+                    if has_flatten {
+                        add_ignored_recursive(
+                            &abs,
+                            target_abs,
+                            git,
+                            options,
+                            &mut by_abs,
+                            &mut seen_paths,
+                            entries,
+                        );
+                    }
+                }
+            }
         }
 
         let depth = rel.components().count();

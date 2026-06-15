@@ -432,3 +432,31 @@ fn git_flatten_includes_nested_directories_unless_only_files() {
         "should contain file: {text}"
     );
 }
+
+#[test]
+fn test_ignored_directory_flatten() {
+    let repo = init_repo();
+    fs::write(repo.path().join(".gitignore"), "ignored_dir/\n").unwrap();
+    git(repo.path(), &["add", ".gitignore"]);
+    git(repo.path(), &["commit", "-q", "-m", "add gitignore"]);
+
+    fs::create_dir_all(repo.path().join("ignored_dir/sub")).unwrap();
+    fs::write(repo.path().join("ignored_dir/sub/file.txt"), "ignored data").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--ignored", "--flatten", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        text.contains("ignored_dir/sub/file.txt"),
+        "should contain ignored file in subdirectory: {text}"
+    );
+}
+
