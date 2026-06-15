@@ -6,107 +6,87 @@ use std::process::Command;
 use time::OffsetDateTime;
 
 fn main() -> io::Result<()> {
-    println!("cargo:rerun-if-changed=.git/HEAD");
-    if let Ok(head_ref) = std::fs::read_to_string(".git/HEAD") {
-        if head_ref.starts_with("ref:") {
-            let ref_path = head_ref.trim_start_matches("ref:").trim();
-            println!("cargo:rerun-if-changed=.git/{}", ref_path);
-        }
-    }
+    let ver_base = version_string();
+    let time_str = build_time();
 
-    let tagline = "glas - A Git-aware ls alternative";
-    let url = "https://github.com/hagatasdelus/glas";
-
-    let ver = if is_debug_build() {
-        format!(
-            "{}\nv{} [{}] built on {} (pre-release debug build!)\n{}",
-            tagline,
-            version_string(),
-            git_hash(),
-            build_date(),
-            url
-        )
-    } else if is_development_version() {
-        format!(
-            "{}\nv{} [{}] built on {} (pre-release!)\n{}",
-            tagline,
-            version_string(),
-            git_hash(),
-            build_date(),
-            url
-        )
-    } else {
-        format!("{}\nv{}\n{}", tagline, version_string(), url)
-    };
+    let ver = is_development_version()
+        .then(git_hash)
+        .flatten()
+        .map(|git_meta| format!("{} {} ({})", ver_base, git_meta, time_str))
+        .unwrap_or_else(|| format!("{} ({})", ver_base, time_str));
 
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
     let path = out.join("version_string.txt");
 
     let mut f = File::create(&path)
         .unwrap_or_else(|_| panic!("Failed to create {}", path.to_string_lossy()));
-    writeln!(f, "{}", ver)?;
+
+    write!(f, "{}", ver)?;
 
     Ok(())
 }
 
-fn git_hash() -> String {
+fn git_hash() -> Option<String> {
     Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
+        .args(["describe", "--tags", "--always", "--dirty"])
         .output()
-        .map(|o| {
-            let hash = String::from_utf8_lossy(&o.stdout).trim().to_string();
-            if hash.is_empty() {
-                "unknown".to_string()
-            } else {
-                hash
-            }
+        .ok()
+        .filter(|output| output.status.success())
+        .inspect(|_| {
+            println!("cargo:rerun-if-changed=.git/HEAD");
+            println!("cargo:rerun-if-changed=.git/refs/tags");
+            println!("cargo:rerun-if-changed=.git/packed-refs");
         })
-        .unwrap_or_else(|_| "unknown".to_string())
-}
-
-fn is_development_version() -> bool {
-    cargo_version().ends_with("-pre")
+        .map(|output| {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            version.strip_prefix('v').unwrap_or(&version).to_string()
+        })
 }
 
 fn is_debug_build() -> bool {
-    env::var("PROFILE").unwrap_or_default() == "debug"
+    let no_opt = env::var("OPT_LEVEL").map_or(false, |v| v == "0");
+    let has_debug_info = env::var("DEBUG").map_or(false, |v| v != "0" && v != "false");
+
+    no_opt || has_debug_info
+}
+
+fn is_development_version() -> bool {
+    cargo_version().ends_with("-pre") || is_debug_build()
 }
 
 fn cargo_version() -> String {
-    env::var("CARGO_PKG_VERSION").unwrap()
+    env::var("CARGO_PKG_VERSION").expect("CARGO_PKG_VERSION must be set")
 }
 
 fn version_string() -> String {
-    let mut ver = cargo_version();
+    let ver = cargo_version();
     let feats = nonstandard_features_string();
-    if !feats.is_empty() {
-        ver.push_str(&format!(" [{}]", &feats));
+
+    if feats.is_empty() {
+        ver
+    } else {
+        format!("{} [{}]", ver, feats)
     }
-    ver
 }
 
 fn feature_enabled(name: &str) -> bool {
     env::var(format!("CARGO_FEATURE_{}", name.to_uppercase()))
-        .map(|e| !e.is_empty())
-        .unwrap_or(false)
+        .map_or(false, |e| !e.is_empty())
 }
 
 fn nonstandard_features_string() -> String {
-    let mut s = Vec::new();
-    if feature_enabled("git") {
-        s.push("+git");
-    } else {
-        s.push("-git");
-    }
-    s.join(", ")
+    if feature_enabled("git") { "+git" } else { "-git" }.to_string()
 }
 
-fn build_date() -> String {
+fn build_time() -> String {
     let now = OffsetDateTime::now_utc();
     format!(
-        "{}-{:02}-{:02}",
+        "{}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
         now.year(),
         u8::from(now.month()),
-        now.day()
+        now.day(),
+        now.hour(),
+        now.minute(),
+        now.second()
     )
 }
