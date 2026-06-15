@@ -123,9 +123,13 @@ pub fn collect_target_entries(
 
     let has_git = git_context.is_some();
     entries.retain(|entry| {
-        let kind_ok = match entry.kind {
-            EntryKind::File => !dir_options.only_dirs,
-            EntryKind::Directory | EntryKind::Summary { .. } => !dir_options.only_files,
+        let kind_ok = if dir_options.only_dirs && dir_options.only_files {
+            true
+        } else {
+            match entry.kind {
+                EntryKind::File => !dir_options.only_dirs,
+                EntryKind::Directory | EntryKind::Summary { .. } => !dir_options.only_files,
+            }
         };
         if !kind_ok {
             return false;
@@ -180,11 +184,13 @@ fn collect_directory_entries(target_abs: &Path, dir_options: &DirOptions) -> Res
         }
 
         let entry = Entry::new_file_or_dir(item_path, rel, metadata, dir_options.long);
-        if dir_options.only_dirs && !matches!(entry.kind, EntryKind::Directory) {
-            continue;
-        }
-        if dir_options.only_files && !matches!(entry.kind, EntryKind::File) {
-            continue;
+        if !(dir_options.only_dirs && dir_options.only_files) {
+            if dir_options.only_dirs && !matches!(entry.kind, EntryKind::Directory) {
+                continue;
+            }
+            if dir_options.only_files && !matches!(entry.kind, EntryKind::File) {
+                continue;
+            }
         }
         entries.push(entry);
     }

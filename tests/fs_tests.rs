@@ -153,3 +153,25 @@ fn test_treat_dirs_as_files_eza_behavior() {
     assert!(!text.contains("a.txt"), "should not list directory contents: {text}");
 }
 
+#[test]
+fn test_only_dirs_and_only_files_coexist() {
+    let dir = TempDir::new().expect("temp dir");
+    fs::write(dir.path().join("a.txt"), "hello").expect("write a");
+    fs::create_dir(dir.path().join("subdir")).expect("create subdir");
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(dir.path())
+        .args(["--no-git", "-D", "-f", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(text.contains("a.txt"), "should contain file: {text}");
+    assert!(text.contains("subdir"), "should contain directory: {text}");
+}
+
+
