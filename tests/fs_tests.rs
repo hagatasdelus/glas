@@ -116,3 +116,40 @@ fn test_multiple_targets_partial_failure() {
         "stderr was: {stderr_text}"
     );
 }
+
+#[test]
+fn test_treat_dirs_as_files_eza_behavior() {
+    let repo = tempfile::TempDir::new().unwrap();
+    let status = std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(repo.path())
+        .status()
+        .unwrap();
+    assert!(status.success());
+    std::process::Command::new("git").args(["config", "user.email", "test@example.com"]).current_dir(repo.path()).status().unwrap();
+    std::process::Command::new("git").args(["config", "user.name", "tester"]).current_dir(repo.path()).status().unwrap();
+    std::process::Command::new("git").args(["config", "commit.gpgsign", "false"]).current_dir(repo.path()).status().unwrap();
+
+    fs::create_dir_all(repo.path().join("src/sub")).unwrap();
+    fs::write(repo.path().join("src/sub/a.txt"), "hello").unwrap();
+    std::process::Command::new("git").args(["add", "src/sub/a.txt"]).current_dir(repo.path()).status().unwrap();
+    std::process::Command::new("git").args(["commit", "-q", "-m", "init"]).current_dir(repo.path()).status().unwrap();
+
+    fs::write(repo.path().join("src/sub/a.txt"), "hello v2").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["-d", "src", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(text.contains("src"), "should contain src: {text}");
+    assert!(!text.contains("modified files"), "should not contain modified files summary: {text}");
+    assert!(!text.contains("a.txt"), "should not list directory contents: {text}");
+}
+

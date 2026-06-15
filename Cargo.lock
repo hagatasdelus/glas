@@ -367,7 +367,7 @@ dependencies = [
 
 [[package]]
 name = "glas"
-version = "0.1.0-20260612dev"
+version = "0.1.0-20260614dev"
 dependencies = [
  "anyhow",
  "assert_cmd",
