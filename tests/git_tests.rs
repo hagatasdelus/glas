@@ -376,3 +376,59 @@ fn git_clean_directories_are_listed() {
         "clean_dir should be listed, stdout was: {text}"
     );
 }
+
+#[test]
+fn git_flatten_includes_nested_directories_unless_only_files() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("dir1/dir2")).unwrap();
+    fs::write(repo.path().join("dir1/dir2/file.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "dir1/dir2/file.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "add nested file"]);
+
+    fs::write(repo.path().join("dir1/dir2/file.txt"), "hello v2").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--modified", "--flatten=all", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        lines.contains(&"dir1") || lines.contains(&"dir1/"),
+        "should contain dir1: {text}"
+    );
+    assert!(
+        lines.contains(&"dir1/dir2") || lines.contains(&"dir1/dir2/"),
+        "should contain dir1/dir2: {text}"
+    );
+    assert!(
+        lines.contains(&"dir1/dir2/file.txt"),
+        "should contain file: {text}"
+    );
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--modified", "--flatten=all", "-f", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        !text.contains("dir1/dir2\n") && !text.contains("dir1\n"),
+        "should not contain directories: {text}"
+    );
+    assert!(
+        text.contains("dir1/dir2/file.txt"),
+        "should contain file: {text}"
+    );
+}

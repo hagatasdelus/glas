@@ -364,6 +364,42 @@ pub fn apply_git_overlay(
         }
     }
 
+    for parent in &modified_dirs {
+        if seen_paths.contains(parent) {
+            continue;
+        }
+
+        let rel = match parent.strip_prefix(target_abs) {
+            Ok(r) => r,
+            _ => continue,
+        };
+
+        let depth = rel.components().count();
+        let should_flatten = match options.flatten {
+            FlattenDepth::All => true,
+            FlattenDepth::Depth(d) => depth <= d.saturating_add(1),
+        };
+
+        if should_flatten {
+            if !options.all && is_hidden_path(rel) {
+                continue;
+            }
+
+            let metadata = match fs::symlink_metadata(parent) {
+                Ok(m) => m,
+                _ => continue,
+            };
+
+            let mut entry =
+                Entry::new_file_or_dir(parent.clone(), rel.to_path_buf(), metadata, options.long);
+            entry.git = GitKind::Modified;
+
+            by_abs.insert(parent.clone(), entries.len());
+            seen_paths.insert(parent.clone());
+            entries.push(entry);
+        }
+    }
+
     for entry in entries.iter_mut() {
         if !matches!(entry.kind, EntryKind::Directory) || !matches!(entry.git, GitKind::Clean) {
             continue;
