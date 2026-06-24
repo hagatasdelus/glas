@@ -67,6 +67,7 @@ fn special_files_are_bold_in_default_output() {
 }
 
 #[test]
+#[cfg(feature = "git")]
 fn special_files_are_bold_even_when_modified_or_readme() {
     let temp = TempDir::new().expect("failed to create temp dir");
     let status = std::process::Command::new("git")

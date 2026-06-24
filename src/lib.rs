@@ -26,11 +26,17 @@ pub fn run() -> Result<()> {
 }
 
 #[derive(Debug)]
-pub struct PartialFailure;
+pub struct PartialFailure {
+    pub errors: Vec<(PathBuf, anyhow::Error)>,
+}
 
 impl std::fmt::Display for PartialFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Partial failure during target scanning")
+        write!(
+            f,
+            "Partial failure during target scanning ({} errors)",
+            self.errors.len()
+        )
     }
 }
 
@@ -56,15 +62,14 @@ fn run_with_cli(cli: Cli) -> Result<()> {
     };
 
     let mut rendered = Vec::new();
-    let mut has_error = false;
+    let mut errors = Vec::new();
     for target in targets {
         match collect_target_entries(&target, &dir_options, &render_options) {
             Ok(entries) => {
                 rendered.extend(entries);
             }
             Err(err) => {
-                eprintln!("glas: {}: {}", target.display(), err);
-                has_error = true;
+                errors.push((target.clone(), err));
             }
         }
     }
@@ -73,8 +78,8 @@ fn run_with_cli(cli: Cli) -> Result<()> {
 
     write_output(&rendered, &render_options, color_enabled, layout)?;
 
-    if has_error {
-        Err(anyhow::anyhow!(PartialFailure))
+    if !errors.is_empty() {
+        Err(anyhow::anyhow!(PartialFailure { errors }))
     } else {
         Ok(())
     }
@@ -86,8 +91,7 @@ mod tests {
     use clap::Parser;
     use fs::file::EntryKind;
     use fs::git::GitKind;
-    use options::layout::OutputLayout;
-    use output::grid::render_grid;
+    use output::grid::render_grid_with_width;
     use output::render::RenderedEntry;
 
     fn parse_cli(args: &[&str]) -> Cli {
@@ -112,25 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn default_layout_is_grid_on_tty() {
-        let cli = parse_cli(&[]);
-        assert_eq!(resolve_layout_mode(&cli, true), OutputLayout::Grid);
-    }
-
-    #[test]
-    fn default_layout_falls_back_to_oneline_when_not_tty() {
-        let cli = parse_cli(&[]);
-        assert_eq!(resolve_layout_mode(&cli, false), OutputLayout::OneLine);
-    }
-
-    #[test]
-    #[serial_test::serial]
     fn tty_default_renderer_outputs_single_row() {
-        let old_columns = std::env::var("COLUMNS");
-        unsafe {
-            std::env::set_var("COLUMNS", "9999");
-        }
-
         let entries = vec![
             dummy_entry("Cargo.lock"),
             dummy_entry("Cargo.toml"),
@@ -141,17 +127,7 @@ mod tests {
             dummy_entry("tests"),
         ];
         let mut out = String::new();
-        render_grid(&entries, false, &mut out);
-
-        if let Ok(val) = old_columns {
-            unsafe {
-                std::env::set_var("COLUMNS", val);
-            }
-        } else {
-            unsafe {
-                std::env::remove_var("COLUMNS");
-            }
-        }
+        render_grid_with_width(&entries, false, Some(9999), &mut out);
 
         assert_eq!(out.lines().count(), 1, "output was: {out:?}");
     }

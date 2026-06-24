@@ -84,7 +84,7 @@ pub fn collect_target_entries(
     let target_meta = fs::symlink_metadata(&target_abs)
         .with_context(|| format!("failed to read metadata for {}", target_abs.display()))?;
 
-    let git_handle = if dir_options.no_git {
+    let mut git_handle = if dir_options.no_git {
         None
     } else {
         let target_for_thread = target_abs.clone();
@@ -94,16 +94,16 @@ pub fn collect_target_entries(
         }))
     };
 
-    let git_context = if let Some(handle) = git_handle {
-        handle
-            .join()
-            .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
-    } else {
-        None
-    };
-
+    let mut git_context = None;
     let mut entries = if dir_options.stage {
         let mut stage_entries = Vec::new();
+        git_context = if let Some(handle) = git_handle.take() {
+            handle
+                .join()
+                .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
+        } else {
+            None
+        };
         if let Some(git) = git_context.as_ref() {
             for (abs_path, stages) in &git.stages {
                 if abs_path.starts_with(&target_abs) {
@@ -176,6 +176,16 @@ pub fn collect_target_entries(
             target_meta,
             dir_options.long,
         )]
+    };
+
+    let git_context = if dir_options.stage {
+        git_context
+    } else if let Some(handle) = git_handle.take() {
+        handle
+            .join()
+            .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
+    } else {
+        None
     };
 
     if let Some(git) = git_context.as_ref().filter(|_| !dir_options.stage) {
@@ -257,4 +267,33 @@ fn collect_directory_entries(target_abs: &Path, dir_options: &DirOptions) -> Res
     }
 
     Ok(entries)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_collect_directory_entries_basic() {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("a.txt"), "hello").unwrap();
+        fs::create_dir(dir.path().join("subdir")).unwrap();
+
+        let options = DirOptions {
+            all: false,
+            long: false,
+            ..Default::default()
+        };
+
+        let entries = collect_directory_entries(dir.path(), &options).unwrap();
+        assert_eq!(entries.len(), 2);
+
+        let names: Vec<String> = entries
+            .iter()
+            .map(|e| e.rel_to_target.to_string_lossy().into_owned())
+            .collect();
+        assert!(names.contains(&"a.txt".to_string()));
+        assert!(names.contains(&"subdir".to_string()));
+    }
 }

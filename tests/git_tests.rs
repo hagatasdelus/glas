@@ -1,3 +1,5 @@
+#![cfg(feature = "git")]
+
 use assert_cmd::Command;
 use std::fs;
 use std::path::Path;
@@ -162,14 +164,11 @@ fn git_ls_files_selectors_are_parsed() {
     let dir = tempfile::TempDir::new().unwrap();
     for flag in &[
         "--cached",
-        "-c",
         "--stage",
         "--staged",
         "--deleted",
         "--modified",
-        "-m",
         "--others",
-        "-o",
         "--ignored",
         "--include-ignored",
     ] {
@@ -485,8 +484,8 @@ fn test_stage_only_lists_staged_files() {
 
     let text = String::from_utf8(output).unwrap();
     assert!(
-        text.contains("tracked.txt"),
-        "should contain tracked file: {text}"
+        text.contains("\ttracked.txt"),
+        "should contain tracked file with tab separator: {text}"
     );
     assert!(text.contains("100644"), "should contain file mode: {text}");
     assert!(

@@ -1,22 +1,14 @@
-use clap::{ArgAction, Parser, ValueEnum};
+use clap::{Parser, ValueEnum};
 use std::path::PathBuf;
 
 const HELP_TEMPLATE: &str = "USAGE:\n  {usage}\n\n{all-args}";
 
 #[derive(Debug, Parser)]
 #[command(name = "glas")]
-#[command(version)]
-#[command(disable_help_flag = true)]
-#[command(disable_version_flag = true)]
+#[command(version = include_str!(concat!(env!("OUT_DIR"), "/version_string.txt")))]
 #[command(override_usage = "glas [OPTIONS] [FILE]...")]
 #[command(help_template = HELP_TEMPLATE)]
 pub struct Cli {
-    #[arg(short = '?', action = ArgAction::Help, help = "show list of command-line options", help_heading = "META OPTIONS")]
-    pub help: Option<bool>,
-
-    #[arg(short = 'v', long = "version", action = ArgAction::Version, help = "show version of glas", help_heading = "META OPTIONS")]
-    pub version: Option<bool>,
-
     #[arg(
         short = '1',
         long = "oneline",
@@ -34,7 +26,7 @@ pub struct Cli {
     pub long: bool,
 
     #[arg(
-        short = 'h',
+        short = 'H',
         long = "header",
         help = "display a header row in long format",
         help_heading = "DISPLAY OPTIONS"
@@ -107,7 +99,6 @@ pub struct Cli {
     pub sort: Option<SortField>,
 
     #[arg(
-        short = 'c',
         long = "cached",
         help = "show cached files in index (default)",
         help_heading = "GIT-AWARE OPTIONS"
@@ -130,7 +121,6 @@ pub struct Cli {
     pub deleted: bool,
 
     #[arg(
-        short = 'm',
         long = "modified",
         help = "show files with an unstaged modification",
         help_heading = "GIT-AWARE OPTIONS"
@@ -138,7 +128,6 @@ pub struct Cli {
     pub modified: bool,
 
     #[arg(
-        short = 'o',
         long = "others",
         alias = "other",
         help = "show other (untracked) files in the output",

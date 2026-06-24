@@ -61,7 +61,7 @@ fn long_format_marks_xattr_with_at_sign() {
 
 #[test]
 #[cfg(unix)]
-fn short_h_is_header_not_help() {
+fn short_upper_h_is_header() {
     let dir = TempDir::new().expect("temp dir");
     fs::write(dir.path().join("a.txt"), "a\n").expect("write a");
     fs::set_permissions(dir.path().join("a.txt"), fs::Permissions::from_mode(0o644))
@@ -70,7 +70,7 @@ fn short_h_is_header_not_help() {
     let mut cmd = Command::cargo_bin("glas").expect("binary");
     let output = cmd
         .current_dir(dir.path())
-        .args(["--no-git", "-l", "-h", "--color=never"])
+        .args(["--no-git", "-l", "-H", "--color=never"])
         .assert()
         .success()
         .get_output()
