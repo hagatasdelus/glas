@@ -4,6 +4,7 @@
 [![install size](https://img.shields.io/badge/install_size-0.0_kB-green.svg)](https://packagephobia.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/hagatasdelus/glas/badge.svg?branch=main)](https://coveralls.io/github/hagatasdelus/glas?branch=main)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)](https://github.com/hagatasdelus/glas/releases/tag/v0.1.0)
 
 <div align="center" style="font-size: 1.1rem;"><sub>
 README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
@@ -24,12 +25,7 @@ glas - Git対応でパイプラインフレンドリーな `ls` 代替ツール
 ## インストール
 
 ```bash
-# リポジトリをクローン
-git clone https://github.com/hagatasdelus/glas.git
-cd glas
-
-# ビルドしてローカルにインストール
-cargo install --path .
+undefined
 ```
 
 ## 使い方
@@ -58,17 +54,12 @@ FILTERING & SORTING OPTIONS:
   -D, --only-dirs            ディレクトリのみを表示する
   -f, --only-files           ファイルのみを表示する
   -s, --sort FIELD           指定したフィールドでソートする [name, size, time, git] (デフォルト: git, then name)
- 
+    
 GIT-AWARE OPTIONS:
-  -c, --cached               Gitインデックスにキャッシュされた（追跡対象の）ファイルを表示する（デフォルト）
-      --stage                ステージングされた情報のモードビット、オブジェクト名、ステージ番号を表示する
-      --deleted              未ステージの削除されたファイルを表示する
-  -m, --modified             未ステージの変更されたファイルを表示する
-  -o, --others               その他の（追跡対象外の）ファイルを表示する
-      --ignored              無視されたファイルのみを表示する
-      --include-ignored      無視されたファイルを含めて表示する（別名: --show-ignored）
+      --git-only             変更がある追跡対象ファイルのみを表示する 
+      --show-ignored         無視されたファイルを表示する
       --no-git               Gitコンテキストの取得を無効にする
-      --flatten[=DEPTH]      ネストされた変更ファイルを展開して表示する（デフォルト: 0、値を指定しない場合は 'all'）
+      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 0）
       --full-name            プロジェクトのルートディレクトリからの相対パスで出力する
 ```
 
