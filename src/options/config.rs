@@ -14,6 +14,12 @@ pub enum FlattenDepth {
     All,
 }
 
+impl Default for FlattenDepth {
+    fn default() -> Self {
+        Self::Depth(0)
+    }
+}
+
 impl FlattenDepth {
     /// Constructs a `FlattenDepth` from a string.
     /// Case-insensitively resolves "all" to `FlattenDepth::All`,
@@ -28,7 +34,7 @@ impl FlattenDepth {
 }
 
 /// Configuration options for directory traversal and entry filtering.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DirOptions {
     /// Whether to completely disable Git integration.
     pub no_git: bool,
@@ -76,13 +82,15 @@ impl DirOptions {
 
         let git_select_mode = cached || stage || deleted || modified || others || ignored;
 
+        let only_files = cli.only_files || cached || stage;
+
         Self {
             no_git: cli.no_git,
             treat_dirs_as_files: cli.treat_dirs_as_files,
             long: cli.long,
             all: cli.all,
             only_dirs: cli.only_dirs,
-            only_files: cli.only_files,
+            only_files,
             cached,
             stage,
             deleted,
@@ -97,7 +105,7 @@ impl DirOptions {
 }
 
 /// Options controlling output rendering and formatting.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct RenderOptions {
     /// Whether to use the detailed long format (table mode).
     pub long: bool,

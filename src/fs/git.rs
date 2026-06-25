@@ -4,6 +4,7 @@
 //! and mapping it to file entries.
 
 use anyhow::{Context, Result};
+#[cfg(feature = "git")]
 use git2::{Repository, Status, StatusOptions};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::fs;
@@ -31,6 +32,7 @@ pub enum GitKind {
     Clean,
 }
 
+#[cfg(feature = "git")]
 impl GitKind {
     pub fn from_status(status: Status) -> Self {
         if status.is_conflicted() {
@@ -65,7 +67,9 @@ impl GitKind {
 
         Self::Clean
     }
+}
 
+impl GitKind {
     pub fn rank(self) -> u8 {
         match self {
             Self::Conflicted => 0,
@@ -121,9 +125,14 @@ pub struct GitContext {
     pub stages: FxHashMap<PathBuf, Vec<StageInfo>>,
 }
 
+fn normalize_path(path: &Path) -> PathBuf {
+    path.components().collect()
+}
+
 /// Detects a Git repository from the specified absolute path, and loads context
 /// information (statuses, index/stages, etc.) for that repository.
 /// Returns `Ok(None)` if the path is not part of a Git repository.
+#[cfg(feature = "git")]
 pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<GitContext>> {
     let repo = match Repository::discover(target_abs) {
         Ok(repo) => repo,
@@ -141,8 +150,8 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     if let Ok(index) = repo.index() {
         for entry in index.iter() {
             let path_str = String::from_utf8_lossy(&entry.path);
-            let repo_rel = PathBuf::from(path_str.as_ref());
-            let abs_path = repo_root.join(&repo_rel);
+            let repo_rel = normalize_path(&PathBuf::from(path_str.as_ref()));
+            let abs_path = normalize_path(&repo_root.join(&repo_rel));
             let stage = ((entry.flags & 0x3000) >> 12) as i32;
             let info = StageInfo {
                 mode: entry.mode,
@@ -175,7 +184,7 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
         if kind == GitKind::Clean {
             continue;
         }
-        let key = PathBuf::from(path);
+        let key = normalize_path(&PathBuf::from(path));
         if let Some(existing) = status_map.get(&key).copied() {
             status_map.insert(key, existing.merge(kind));
         } else {
@@ -190,8 +199,102 @@ pub fn load_git_context(target_abs: &Path, show_ignored: bool) -> Result<Option<
     }))
 }
 
+#[cfg(feature = "git")]
+fn merge_or_insert_deleted(
+    abs: PathBuf,
+    rel: PathBuf,
+    git_kind: GitKind,
+    git: &GitContext,
+    by_abs: &mut FxHashMap<PathBuf, usize>,
+    seen_paths: &mut FxHashSet<PathBuf>,
+    entries: &mut Vec<Entry>,
+) {
+    if let Some(idx) = by_abs.get(&abs).copied() {
+        entries[idx].git = entries[idx].git.merge(git_kind);
+        if let Some(stages) = git.stages.get(&abs) {
+            entries[idx].stages = stages.clone();
+        }
+    } else if git_kind == GitKind::Deleted {
+        let mut entry = Entry::new_deleted(abs.clone(), rel);
+        if let Some(stages) = git.stages.get(&abs) {
+            entry.stages = stages.clone();
+        }
+        by_abs.insert(abs.clone(), entries.len());
+        seen_paths.insert(abs);
+        entries.push(entry);
+    }
+}
+
+#[cfg(feature = "git")]
+fn add_ignored_recursive(
+    dir_path: &Path,
+    target_abs: &Path,
+    git: &GitContext,
+    options: &DirOptions,
+    by_abs: &mut FxHashMap<PathBuf, usize>,
+    seen_paths: &mut FxHashSet<PathBuf>,
+    entries: &mut Vec<Entry>,
+) {
+    let Ok(dir_iter) = fs::read_dir(dir_path) else {
+        return;
+    };
+
+    for item in dir_iter.flatten() {
+        let path = item.path();
+        let Ok(metadata) = fs::symlink_metadata(&path) else {
+            continue;
+        };
+
+        let rel = match path.strip_prefix(target_abs) {
+            Ok(p) => p.to_path_buf(),
+            _ => continue,
+        };
+
+        if !options.all && is_hidden_path(&rel) {
+            continue;
+        }
+
+        let depth = rel.components().count();
+        let should_flatten = match options.flatten {
+            FlattenDepth::All => true,
+            FlattenDepth::Depth(d) => depth <= d.saturating_add(1),
+        };
+
+        if !should_flatten {
+            continue;
+        }
+
+        if metadata.is_dir() {
+            if !seen_paths.contains(&path) {
+                let mut entry = Entry::new_file_or_dir(
+                    path.clone(),
+                    rel.clone(),
+                    metadata.clone(),
+                    options.long,
+                );
+                entry.git = GitKind::Ignored;
+                by_abs.insert(path.clone(), entries.len());
+                seen_paths.insert(path.clone());
+                entries.push(entry);
+            }
+
+            add_ignored_recursive(&path, target_abs, git, options, by_abs, seen_paths, entries);
+        } else if !seen_paths.contains(&path) {
+            let mut entry = Entry::new_file_or_dir(path.clone(), rel, metadata, options.long);
+            entry.git = GitKind::Ignored;
+            if let Some(stages) = git.stages.get(&path) {
+                entry.stages = stages.clone();
+            }
+            by_abs.insert(path.clone(), entries.len());
+            seen_paths.insert(path.clone());
+            entries.push(entry);
+        }
+    }
+}
+
 /// Applies and integrates Git context information (status and stages) into the collected file entries,
 /// and reconstructs the entry list based on Git filtering rules and flattening configuration.
+#[cfg(feature = "git")]
 pub fn apply_git_overlay(
     entries: &mut Vec<Entry>,
     target_abs: &Path,
@@ -212,6 +315,17 @@ pub fn apply_git_overlay(
         if let Some(stages) = git.stages.get(&entry.abs_path) {
             entry.stages = stages.clone();
         }
+        if matches!(entry.kind, EntryKind::File)
+            && entry
+                .abs_path
+                .strip_prefix(&git.repo_root)
+                .map(|repo_rel| {
+                    !repo_rel.as_os_str().is_empty() && !git.statuses.contains_key(repo_rel)
+                })
+                .unwrap_or(false)
+        {
+            entry.git = GitKind::Ignored;
+        }
     }
 
     for (repo_rel, git_kind) in &git.statuses {
@@ -226,21 +340,42 @@ pub fn apply_git_overlay(
         };
 
         if rel.as_os_str().is_empty() {
-            if let Some(idx) = by_abs.get(&abs).copied() {
-                entries[idx].git = entries[idx].git.merge(*git_kind);
-                if let Some(stages) = git.stages.get(&abs) {
-                    entries[idx].stages = stages.clone();
-                }
-            } else if *git_kind == GitKind::Deleted {
-                let mut entry = Entry::new_deleted(abs.clone(), rel.to_path_buf());
-                if let Some(stages) = git.stages.get(&abs) {
-                    entry.stages = stages.clone();
-                }
-                by_abs.insert(abs.clone(), entries.len());
-                seen_paths.insert(abs.clone());
-                entries.push(entry);
-            }
+            merge_or_insert_deleted(
+                abs.clone(),
+                rel.to_path_buf(),
+                *git_kind,
+                git,
+                &mut by_abs,
+                &mut seen_paths,
+                entries,
+            );
             continue;
+        }
+
+        if options.treat_dirs_as_files {
+            continue;
+        }
+
+        if *git_kind == GitKind::Ignored
+            && fs::symlink_metadata(&abs)
+                .map(|m| m.is_dir())
+                .unwrap_or(false)
+        {
+            let has_flatten = match options.flatten {
+                FlattenDepth::All => true,
+                FlattenDepth::Depth(d) => d > 0,
+            };
+            if has_flatten {
+                add_ignored_recursive(
+                    &abs,
+                    target_abs,
+                    git,
+                    options,
+                    &mut by_abs,
+                    &mut seen_paths,
+                    entries,
+                );
+            }
         }
 
         let depth = rel.components().count();
@@ -253,20 +388,15 @@ pub fn apply_git_overlay(
         }
 
         if depth <= 1 {
-            if let Some(idx) = by_abs.get(&abs).copied() {
-                entries[idx].git = entries[idx].git.merge(*git_kind);
-                if let Some(stages) = git.stages.get(&abs) {
-                    entries[idx].stages = stages.clone();
-                }
-            } else if *git_kind == GitKind::Deleted {
-                let mut entry = Entry::new_deleted(abs.clone(), rel.to_path_buf());
-                if let Some(stages) = git.stages.get(&abs) {
-                    entry.stages = stages.clone();
-                }
-                by_abs.insert(abs.clone(), entries.len());
-                seen_paths.insert(abs.clone());
-                entries.push(entry);
-            }
+            merge_or_insert_deleted(
+                abs.clone(),
+                rel.to_path_buf(),
+                *git_kind,
+                git,
+                &mut by_abs,
+                &mut seen_paths,
+                entries,
+            );
             continue;
         }
 
@@ -319,18 +449,69 @@ pub fn apply_git_overlay(
         }
     }
 
+    let mut modified_dirs = FxHashSet::default();
+    if !options.treat_dirs_as_files {
+        for (repo_rel, git_kind) in &git.statuses {
+            if *git_kind == GitKind::Clean {
+                continue;
+            }
+            let abs = git.repo_root.join(repo_rel);
+            if !abs.starts_with(target_abs) {
+                continue;
+            }
+            let mut curr = abs.parent();
+            while let Some(parent) = curr {
+                if parent == target_abs || !parent.starts_with(target_abs) {
+                    break;
+                }
+                modified_dirs.insert(parent.to_path_buf());
+                curr = parent.parent();
+            }
+        }
+    }
+
+    for parent in &modified_dirs {
+        if seen_paths.contains(parent) {
+            continue;
+        }
+
+        let rel = match parent.strip_prefix(target_abs) {
+            Ok(r) => r,
+            _ => continue,
+        };
+
+        let depth = rel.components().count();
+        let should_flatten = match options.flatten {
+            FlattenDepth::All => true,
+            FlattenDepth::Depth(d) => depth <= d.saturating_add(1),
+        };
+
+        if should_flatten {
+            if !options.all && is_hidden_path(rel) {
+                continue;
+            }
+
+            let metadata = match fs::symlink_metadata(parent) {
+                Ok(m) => m,
+                _ => continue,
+            };
+
+            let mut entry =
+                Entry::new_file_or_dir(parent.clone(), rel.to_path_buf(), metadata, options.long);
+            entry.git = GitKind::Modified;
+
+            by_abs.insert(parent.clone(), entries.len());
+            seen_paths.insert(parent.clone());
+            entries.push(entry);
+        }
+    }
+
     for entry in entries.iter_mut() {
         if !matches!(entry.kind, EntryKind::Directory) || !matches!(entry.git, GitKind::Clean) {
             continue;
         }
 
-        let mut dir_rel = entry.rel_to_target.clone();
-        dir_rel.push("");
-        if git.statuses.keys().any(|repo_rel| {
-            git.repo_root
-                .join(repo_rel)
-                .starts_with(target_abs.join(&dir_rel))
-        }) {
+        if modified_dirs.contains(&entry.abs_path) {
             entry.git = GitKind::Modified;
         }
     }
@@ -361,4 +542,83 @@ pub fn apply_git_overlay(
     }
 
     Ok(())
+}
+
+#[cfg(not(feature = "git"))]
+pub fn load_git_context(_target_abs: &Path, _show_ignored: bool) -> Result<Option<GitContext>> {
+    Ok(None)
+}
+
+#[cfg(not(feature = "git"))]
+pub fn apply_git_overlay(
+    _entries: &mut Vec<Entry>,
+    _target_abs: &Path,
+    _git: &GitContext,
+    _options: &DirOptions,
+) -> Result<()> {
+    Ok(())
+}
+
+#[cfg(all(test, feature = "git"))]
+mod tests {
+    use super::*;
+    use crate::fs::file::EntryKind;
+    use crate::options::DirOptions;
+
+    #[test]
+    fn test_normalize_path() {
+        let path = Path::new("foo/bar/baz");
+        let normalized = normalize_path(path);
+
+        #[cfg(windows)]
+        assert_eq!(normalized, PathBuf::from("foo\\bar\\baz"));
+        #[cfg(not(windows))]
+        assert_eq!(normalized, PathBuf::from("foo/bar/baz"));
+    }
+
+    #[test]
+    fn test_apply_git_overlay_basic() {
+        let repo_root = PathBuf::from("/repo");
+        let target_abs = PathBuf::from("/repo/src");
+
+        let mut statuses = FxHashMap::default();
+        statuses.insert(PathBuf::from("src/main.rs"), GitKind::Modified);
+
+        let git = GitContext {
+            repo_root,
+            statuses,
+            stages: FxHashMap::default(),
+        };
+
+        let options = DirOptions {
+            all: false,
+            long: false,
+            flatten: crate::options::config::FlattenDepth::Depth(0),
+            treat_dirs_as_files: false,
+            only_dirs: false,
+            only_files: false,
+            stage: false,
+            cached: false,
+            ..Default::default()
+        };
+
+        // Create a dummy entry for main.rs
+        let mut entries = vec![Entry {
+            abs_path: PathBuf::from("/repo/src/main.rs"),
+            rel_to_target: PathBuf::from("main.rs"),
+            kind: EntryKind::File,
+            git: GitKind::Clean,
+            mode: 0o100644,
+            uid: 0,
+            has_xattrs: false,
+            size: 100,
+            modified: None,
+            stages: Vec::new(),
+        }];
+
+        apply_git_overlay(&mut entries, &target_abs, &git, &options).unwrap();
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].git, GitKind::Modified);
+    }
 }

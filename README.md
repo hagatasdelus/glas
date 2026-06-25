@@ -24,7 +24,12 @@ Built strictly upon the UNIX philosophy, it provides a rich, ANSI-colorized inte
 ## Installation
 
 ```bash
-undefined
+# Clone the repository
+git clone https://github.com/hagatasdelus/glas.git
+cd glas
+
+# Build and install locally
+cargo install --path .
 ```
 
 ## Usage
@@ -67,9 +72,9 @@ GIT-AWARE OPTIONS
       --full-name            output paths relative to the project top directory
 ```
 
-## Lisence
+## License
 
-MIT Lisence
+MIT License
 
 ## Author
 

@@ -1,9 +1,6 @@
-//! # info/user
-//!
-//! Provides owner user name formatting (converting UID to user name) and a caching mechanism
-//! to reduce system call overhead.
-
 use rustc_hash::FxHashMap;
+
+#[cfg(unix)]
 use users::get_user_by_uid;
 
 use crate::output::render::RenderedEntry;
@@ -20,9 +17,14 @@ pub fn long_user(entry: &RenderedEntry, user_cache: &mut FxHashMap<u32, String>)
         return user.clone();
     }
 
+    #[cfg(unix)]
     let user = get_user_by_uid(uid)
         .map(|u| u.name().to_string_lossy().into_owned())
         .unwrap_or_else(|| uid.to_string());
+
+    #[cfg(not(unix))]
+    let user = uid.to_string();
+
     user_cache.insert(uid, user.clone());
     user
 }

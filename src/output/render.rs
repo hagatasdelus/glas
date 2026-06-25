@@ -52,10 +52,10 @@ pub fn render_path(
     };
 
     if let EntryKind::Summary { modified_count } = entry.kind {
-        let prefix = if base_path.ends_with('/') {
+        let prefix = if base_path.ends_with('/') || base_path.ends_with('\\') {
             base_path
         } else {
-            format!("{base_path}/")
+            format!("{}{}", base_path, std::path::MAIN_SEPARATOR)
         };
         return format!("{prefix} ({modified_count} modified files)");
     }
@@ -189,7 +189,10 @@ mod tests {
             stage: false,
         };
         let rendered = render_path(&entry, Path::new("/dir"), None, &options);
-        assert_eq!(rendered, "sub/ (3 modified files)");
+        assert_eq!(
+            rendered,
+            format!("sub{} (3 modified files)", std::path::MAIN_SEPARATOR)
+        );
     }
 
     #[test]

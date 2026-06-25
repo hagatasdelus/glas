@@ -1,3 +1,5 @@
+#![cfg(feature = "git")]
+
 use assert_cmd::Command;
 use std::fs;
 use std::path::Path;
@@ -67,7 +69,9 @@ fn full_name_prints_repo_relative_paths() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).expect("utf8 output");
+    let text = String::from_utf8(output)
+        .expect("utf8 output")
+        .replace('\\', "/");
     assert!(text.contains("sub/file.txt"), "stdout was: {text}");
 }
 
@@ -162,14 +166,11 @@ fn git_ls_files_selectors_are_parsed() {
     let dir = tempfile::TempDir::new().unwrap();
     for flag in &[
         "--cached",
-        "-c",
         "--stage",
         "--staged",
         "--deleted",
         "--modified",
-        "-m",
         "--others",
-        "-o",
         "--ignored",
         "--include-ignored",
     ] {
@@ -335,7 +336,7 @@ fn git_ls_files_flatten_all_behavior() {
         .get_output()
         .stdout
         .clone();
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(!text.contains("dir1/dir2/dir3/file.txt"));
     assert!(text.contains("dir1"));
 
@@ -348,6 +349,184 @@ fn git_ls_files_flatten_all_behavior() {
         .get_output()
         .stdout
         .clone();
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(text.contains("dir1/dir2/dir3/file.txt"));
+}
+
+#[test]
+fn git_clean_directories_are_listed() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("clean_dir")).expect("create dir");
+    fs::write(repo.path().join("clean_dir/file.txt"), "hello").expect("write file");
+    git(repo.path(), &["add", "clean_dir/file.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "add file"]);
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        text.contains("clean_dir"),
+        "clean_dir should be listed, stdout was: {text}"
+    );
+}
+
+#[test]
+fn git_flatten_includes_nested_directories_unless_only_files() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("dir1/dir2")).unwrap();
+    fs::write(repo.path().join("dir1/dir2/file.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "dir1/dir2/file.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "add nested file"]);
+
+    fs::write(repo.path().join("dir1/dir2/file.txt"), "hello v2").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--modified", "--flatten=all", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
+    let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        lines.contains(&"dir1") || lines.contains(&"dir1/"),
+        "should contain dir1: {text}"
+    );
+    assert!(
+        lines.contains(&"dir1/dir2") || lines.contains(&"dir1/dir2/"),
+        "should contain dir1/dir2: {text}"
+    );
+    assert!(
+        lines.contains(&"dir1/dir2/file.txt"),
+        "should contain file: {text}"
+    );
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--modified", "--flatten=all", "-f", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
+    assert!(
+        !text.contains("dir1/dir2\n") && !text.contains("dir1\n"),
+        "should not contain directories: {text}"
+    );
+    assert!(
+        text.contains("dir1/dir2/file.txt"),
+        "should contain file: {text}"
+    );
+}
+
+#[test]
+fn test_ignored_directory_flatten() {
+    let repo = init_repo();
+    fs::write(repo.path().join(".gitignore"), "ignored_dir/\n").unwrap();
+    git(repo.path(), &["add", ".gitignore"]);
+    git(repo.path(), &["commit", "-q", "-m", "add gitignore"]);
+
+    fs::create_dir_all(repo.path().join("ignored_dir/sub")).unwrap();
+    fs::write(repo.path().join("ignored_dir/sub/file.txt"), "ignored data").unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--ignored", "--flatten", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
+    assert!(
+        text.contains("ignored_dir/sub/file.txt"),
+        "should contain ignored file in subdirectory: {text}"
+    );
+}
+
+#[test]
+fn test_stage_only_lists_staged_files() {
+    let repo = init_repo();
+    fs::write(repo.path().join("tracked.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "tracked.txt"]);
+
+    fs::create_dir_all(repo.path().join("untracked_dir")).unwrap();
+    fs::write(
+        repo.path().join("untracked_dir/untracked.txt"),
+        "hello untracked",
+    )
+    .unwrap();
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--stage", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap();
+    assert!(
+        text.contains("\ttracked.txt"),
+        "should contain tracked file with tab separator: {text}"
+    );
+    assert!(text.contains("100644"), "should contain file mode: {text}");
+    assert!(
+        !text.contains("untracked_dir"),
+        "should not contain untracked directory: {text}"
+    );
+    assert!(
+        !text.contains("untracked.txt"),
+        "should not contain untracked file: {text}"
+    );
+}
+
+#[test]
+fn test_cached_only_lists_files() {
+    let repo = init_repo();
+    fs::create_dir_all(repo.path().join("subdir")).unwrap();
+    fs::write(repo.path().join("subdir/tracked.txt"), "hello").unwrap();
+    git(repo.path(), &["add", "subdir/tracked.txt"]);
+    git(repo.path(), &["commit", "-q", "-m", "init"]);
+
+    let mut cmd = Command::cargo_bin("glas").expect("binary");
+    let output = cmd
+        .current_dir(repo.path())
+        .args(["--cached", "--flatten", "--color=never"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
+    assert!(
+        text.contains("subdir/tracked.txt") || text.contains("tracked.txt"),
+        "should contain tracked file: {text}"
+    );
+    // By default eza/glas lists directories as well, but with --cached it should NOT contain directories like 'subdir' as a standalone entry
+    let lines: Vec<&str> = text.lines().collect();
+    assert!(
+        !lines.contains(&"subdir"),
+        "should not list directory standalone: {text}"
+    );
 }

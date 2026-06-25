@@ -23,7 +23,7 @@ pub fn render_grid(entries: &[RenderedEntry], color_enabled: bool, out: &mut Str
 
 /// Internal helper that arranges file entries in a grid layout with an explicit terminal width parameter.
 /// If `term_width` is None, it falls back to displaying all entries in a single row separated by spaces.
-fn render_grid_with_width(
+pub(crate) fn render_grid_with_width(
     entries: &[RenderedEntry],
     color_enabled: bool,
     term_width: Option<usize>,
@@ -89,7 +89,6 @@ mod tests {
     use super::*;
     use crate::fs::file::EntryKind;
     use crate::fs::git::GitKind;
-    use serial_test::serial;
 
     fn dummy_entry(path: &str) -> RenderedEntry {
         RenderedEntry {
@@ -122,13 +121,7 @@ mod tests {
     }
 
     #[test]
-    #[serial]
-    fn test_render_grid_with_columns_env() {
-        let old_columns = std::env::var("COLUMNS");
-        unsafe {
-            std::env::set_var("COLUMNS", "20");
-        }
-
+    fn test_render_grid_with_width() {
         let entries = vec![
             dummy_entry("a"),
             dummy_entry("bb"),
@@ -137,21 +130,11 @@ mod tests {
             dummy_entry("e"),
         ];
         let mut out = String::new();
-        render_grid(&entries, false, &mut out);
+        render_grid_with_width(&entries, false, Some(20), &mut out);
 
         let lines: Vec<&str> = out.lines().collect();
         assert_eq!(lines.len(), 2);
         assert_eq!(lines[0], "a    ccc  e");
         assert_eq!(lines[1], "bb   d");
-
-        if let Ok(val) = old_columns {
-            unsafe {
-                std::env::set_var("COLUMNS", val);
-            }
-        } else {
-            unsafe {
-                std::env::remove_var("COLUMNS");
-            }
-        }
     }
 }

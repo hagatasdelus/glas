@@ -8,5 +8,5 @@ error: unexpected argument '--cli-help' found
 
 Usage: glas [OPTIONS] [FILE]...
 
-For more information, try '-?'.
+For more information, try '--help'.
 """

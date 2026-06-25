@@ -84,17 +84,86 @@ pub fn collect_target_entries(
     let target_meta = fs::symlink_metadata(&target_abs)
         .with_context(|| format!("failed to read metadata for {}", target_abs.display()))?;
 
-    let git_handle = if dir_options.no_git {
+    let mut git_handle = if dir_options.no_git {
         None
     } else {
         let target_for_thread = target_abs.clone();
-        let show_ignored = true;
+        let show_ignored = dir_options.include_ignored || dir_options.ignored;
         Some(thread::spawn(move || {
             load_git_context(&target_for_thread, show_ignored)
         }))
     };
 
-    let mut entries = if target_meta.is_dir() && !dir_options.treat_dirs_as_files {
+    let mut git_context = None;
+    let mut entries = if dir_options.stage {
+        let mut stage_entries = Vec::new();
+        git_context = if let Some(handle) = git_handle.take() {
+            handle
+                .join()
+                .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
+        } else {
+            None
+        };
+        if let Some(git) = git_context.as_ref() {
+            for (abs_path, stages) in &git.stages {
+                if abs_path.starts_with(&target_abs) {
+                    let rel = match abs_path.strip_prefix(&target_abs) {
+                        Ok(p) => p.to_path_buf(),
+                        _ => continue,
+                    };
+                    if rel.as_os_str().is_empty() {
+                        let rel = abs_path
+                            .file_name()
+                            .map(PathBuf::from)
+                            .unwrap_or_else(|| PathBuf::from("."));
+                        let mut entry = Entry::new_file_or_dir(
+                            abs_path.clone(),
+                            rel,
+                            target_meta.clone(),
+                            dir_options.long,
+                        );
+                        entry.stages = stages.clone();
+                        if let Some(kind) = abs_path
+                            .strip_prefix(&git.repo_root)
+                            .ok()
+                            .and_then(|repo_rel| git.statuses.get(repo_rel))
+                        {
+                            entry.git = *kind;
+                        }
+                        stage_entries.push(entry);
+                    } else {
+                        let entry = match fs::symlink_metadata(abs_path) {
+                            Ok(meta) => {
+                                let mut entry = Entry::new_file_or_dir(
+                                    abs_path.clone(),
+                                    rel,
+                                    meta,
+                                    dir_options.long,
+                                );
+                                entry.stages = stages.clone();
+                                if let Some(kind) = abs_path
+                                    .strip_prefix(&git.repo_root)
+                                    .ok()
+                                    .and_then(|repo_rel| git.statuses.get(repo_rel))
+                                {
+                                    entry.git = *kind;
+                                }
+                                entry
+                            }
+                            Err(_) => {
+                                let mut entry = Entry::new_deleted(abs_path.clone(), rel);
+                                entry.stages = stages.clone();
+                                entry.git = GitKind::Deleted;
+                                entry
+                            }
+                        };
+                        stage_entries.push(entry);
+                    }
+                }
+            }
+        }
+        stage_entries
+    } else if target_meta.is_dir() && !dir_options.treat_dirs_as_files {
         collect_directory_entries(&target_abs, dir_options)?
     } else {
         let rel = target_abs
@@ -109,7 +178,9 @@ pub fn collect_target_entries(
         )]
     };
 
-    let git_context = if let Some(handle) = git_handle {
+    let git_context = if dir_options.stage {
+        git_context
+    } else if let Some(handle) = git_handle.take() {
         handle
             .join()
             .map_err(|_| anyhow::anyhow!("failed to join git status worker"))??
@@ -117,15 +188,19 @@ pub fn collect_target_entries(
         None
     };
 
-    if let Some(git) = git_context.as_ref() {
+    if let Some(git) = git_context.as_ref().filter(|_| !dir_options.stage) {
         apply_git_overlay(&mut entries, &target_abs, git, dir_options)?;
     }
 
     let has_git = git_context.is_some();
     entries.retain(|entry| {
-        let kind_ok = match entry.kind {
-            EntryKind::File => !dir_options.only_dirs,
-            EntryKind::Directory | EntryKind::Summary { .. } => !dir_options.only_files,
+        let kind_ok = if dir_options.only_dirs && dir_options.only_files {
+            true
+        } else {
+            match entry.kind {
+                EntryKind::File => !dir_options.only_dirs,
+                EntryKind::Directory | EntryKind::Summary { .. } => !dir_options.only_files,
+            }
         };
         if !kind_ok {
             return false;
@@ -161,22 +236,64 @@ fn collect_directory_entries(target_abs: &Path, dir_options: &DirOptions) -> Res
         let item = item.with_context(|| format!("failed to read {}", target_abs.display()))?;
         let rel = PathBuf::from(item.file_name());
 
-        if !dir_options.all && is_hidden_path(&rel) {
-            continue;
-        }
-
         let item_path = item.path();
         let metadata = fs::symlink_metadata(&item_path)
             .with_context(|| format!("failed to read metadata for {}", item_path.display()))?;
-        let entry = Entry::new_file_or_dir(item_path, rel, metadata, dir_options.long);
-        if dir_options.only_dirs && !matches!(entry.kind, EntryKind::Directory) {
+
+        let is_hidden = is_hidden_path(&rel) || {
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::MetadataExt;
+                (metadata.file_attributes() & 0x2) != 0
+            }
+            #[cfg(not(windows))]
+            false
+        };
+
+        if !dir_options.all && is_hidden {
             continue;
         }
-        if dir_options.only_files && !matches!(entry.kind, EntryKind::File) {
-            continue;
+
+        let entry = Entry::new_file_or_dir(item_path, rel, metadata, dir_options.long);
+        if !(dir_options.only_dirs && dir_options.only_files) {
+            if dir_options.only_dirs && !matches!(entry.kind, EntryKind::Directory) {
+                continue;
+            }
+            if dir_options.only_files && !matches!(entry.kind, EntryKind::File) {
+                continue;
+            }
         }
         entries.push(entry);
     }
 
     Ok(entries)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_collect_directory_entries_basic() {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("a.txt"), "hello").unwrap();
+        fs::create_dir(dir.path().join("subdir")).unwrap();
+
+        let options = DirOptions {
+            all: false,
+            long: false,
+            ..Default::default()
+        };
+
+        let entries = collect_directory_entries(dir.path(), &options).unwrap();
+        assert_eq!(entries.len(), 2);
+
+        let names: Vec<String> = entries
+            .iter()
+            .map(|e| e.rel_to_target.to_string_lossy().into_owned())
+            .collect();
+        assert!(names.contains(&"a.txt".to_string()));
+        assert!(names.contains(&"subdir".to_string()));
+    }
 }
