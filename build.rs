@@ -68,12 +68,16 @@ fn version_string() -> String {
 }
 
 fn feature_enabled(name: &str) -> bool {
-    env::var(format!("CARGO_FEATURE_{}", name.to_uppercase()))
-        .is_ok_and(|e| !e.is_empty())
+    env::var(format!("CARGO_FEATURE_{}", name.to_uppercase())).is_ok_and(|e| !e.is_empty())
 }
 
 fn nonstandard_features_string() -> String {
-    if feature_enabled("git") { "+git" } else { "-git" }.to_string()
+    if feature_enabled("git") {
+        "+git"
+    } else {
+        "-git"
+    }
+    .to_string()
 }
 
 fn build_time() -> String {

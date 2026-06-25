@@ -76,21 +76,24 @@ fn special_files_are_bold_even_when_modified_or_readme() {
         .status()
         .expect("git init");
     assert!(status.success());
-    std::process::Command::new("git")
+    let status = std::process::Command::new("git")
         .args(["config", "user.email", "test@example.com"])
         .current_dir(temp.path())
         .status()
         .unwrap();
-    std::process::Command::new("git")
+    assert!(status.success());
+    let status = std::process::Command::new("git")
         .args(["config", "user.name", "tester"])
         .current_dir(temp.path())
         .status()
         .unwrap();
-    std::process::Command::new("git")
+    assert!(status.success());
+    let status = std::process::Command::new("git")
         .args(["config", "commit.gpgsign", "false"])
         .current_dir(temp.path())
         .status()
         .unwrap();
+    assert!(status.success());
 
     let cargo_path = temp.path().join("Cargo.toml");
     let readme_path = temp.path().join("README.md");
@@ -99,16 +102,18 @@ fn special_files_are_bold_even_when_modified_or_readme() {
     fs::write(&readme_path, "# README\n").unwrap();
     fs::write(&readme_ja_path, "# README JA\n").unwrap();
 
-    std::process::Command::new("git")
+    let status = std::process::Command::new("git")
         .args(["add", "Cargo.toml", "README.md", "README_ja.md"])
         .current_dir(temp.path())
         .status()
         .unwrap();
-    std::process::Command::new("git")
+    assert!(status.success());
+    let status = std::process::Command::new("git")
         .args(["commit", "-q", "-m", "init"])
         .current_dir(temp.path())
         .status()
         .unwrap();
+    assert!(status.success());
 
     fs::write(&cargo_path, "[package]\nname='y'\n").unwrap();
     fs::write(&readme_path, "# README v2\n").unwrap();

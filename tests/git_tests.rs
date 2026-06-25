@@ -69,7 +69,9 @@ fn full_name_prints_repo_relative_paths() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).expect("utf8 output");
+    let text = String::from_utf8(output)
+        .expect("utf8 output")
+        .replace('\\', "/");
     assert!(text.contains("sub/file.txt"), "stdout was: {text}");
 }
 
@@ -334,7 +336,7 @@ fn git_ls_files_flatten_all_behavior() {
         .get_output()
         .stdout
         .clone();
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(!text.contains("dir1/dir2/dir3/file.txt"));
     assert!(text.contains("dir1"));
 
@@ -347,7 +349,7 @@ fn git_ls_files_flatten_all_behavior() {
         .get_output()
         .stdout
         .clone();
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(text.contains("dir1/dir2/dir3/file.txt"));
 }
 
@@ -396,7 +398,7 @@ fn git_flatten_includes_nested_directories_unless_only_files() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     let lines: Vec<&str> = text.lines().collect();
     assert!(
         lines.contains(&"dir1") || lines.contains(&"dir1/"),
@@ -421,7 +423,7 @@ fn git_flatten_includes_nested_directories_unless_only_files() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(
         !text.contains("dir1/dir2\n") && !text.contains("dir1\n"),
         "should not contain directories: {text}"
@@ -452,7 +454,7 @@ fn test_ignored_directory_flatten() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(
         text.contains("ignored_dir/sub/file.txt"),
         "should contain ignored file in subdirectory: {text}"
@@ -516,7 +518,7 @@ fn test_cached_only_lists_files() {
         .stdout
         .clone();
 
-    let text = String::from_utf8(output).unwrap();
+    let text = String::from_utf8(output).unwrap().replace('\\', "/");
     assert!(
         text.contains("subdir/tracked.txt") || text.contains("tracked.txt"),
         "should contain tracked file: {text}"
