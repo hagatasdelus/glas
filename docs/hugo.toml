@@ -1,0 +1,7 @@
+baseURL = 'https://hagatasdelus.github.io/glas/'
+locale = 'ja'
+title = 'glas - Git-aware ls'
+
+[params]
+author = 'hagatasdelus'
+description = 'Git-aware ls command written in Rust'

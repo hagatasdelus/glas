@@ -1,0 +1,36 @@
+{{ define "main" }}
+<section>
+    <hgroup>
+        <h1>{{ .Site.Title }}</h1>
+        <p>{{ .Site.Params.description }}</p>
+    </hgroup>
+    <p>
+        <code>glas</code> は、Gitインデックスの状況を考慮し、ファイルの変更・追跡ステータスをカラフルに表示するRust製の <code>ls</code> 代替コマンドです。
+        <code>eza</code> の設計思想を受け継ぎ、開発の生産性を向上させます。
+    </p>
+    <div class="grid">
+        <div>
+            <article>
+                <header><h3>特徴</h3></header>
+                <ul>
+                    <li>Gitのステージング、削除、未追跡、無視ファイル等のステータスを即座に視覚化</li>
+                    <li>フラット表示や特定のGit状態のフィルタリングに対応</li>
+                    <li>Rust製かつクロスプラットフォームビルド対応</li>
+                </ul>
+            </article>
+        </div>
+        <div>
+            <article>
+                <header><h3>クイックスタート</h3></header>
+                <p>インストール：</p>
+                <pre><code>git clone https://github.com/hagatasdelus/glas.git
+cd glas
+cargo install --path .</code></pre>
+                <footer>
+                    <a href="{{ "docs/usage/" | relURL }}" role="button">使い方を見る</a>
+                </footer>
+            </article>
+        </div>
+    </div>
+</section>
+{{ end }}

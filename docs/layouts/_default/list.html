@@ -1,0 +1,18 @@
+{{ define "title" }}{{ .Title }} - {{ .Site.Title }}{{ end }}
+
+{{ define "main" }}
+<section>
+    <hgroup>
+        <h1>{{ .Title }}</h1>
+        <p>Glas の解説ドキュメント一覧</p>
+    </hgroup>
+    <ul>
+        {{ range .Pages.ByWeight }}
+        <li>
+            <a href="{{ .RelPermalink }}">{{ .Title }}</a>
+            {{ if .Description }} - {{ .Description }}{{ end }}
+        </li>
+        {{ end }}
+    </ul>
+</section>
+{{ end }}

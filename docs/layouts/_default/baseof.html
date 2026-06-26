@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <title>{{ block "title" . }}{{ .Site.Title }}{{ end }}</title>
+    <style>
+        /* Pico CSS の微調整 */
+        header {
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+        footer {
+            border-top: 1px solid var(--pico-muted-border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        main {
+            min-height: 60vh;
+        }
+    </style>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong><a href="{{ .Site.BaseURL | relURL }}" class="contrast">{{ .Site.Title }}</a></strong></li>
+            </ul>
+            <ul>
+                <li><a href="{{ "docs/" | relURL }}" class="secondary">ドキュメント</a></li>
+                <li><a href="https://github.com/hagatasdelus/glas" target="_blank" rel="noopener noreferrer" class="secondary">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        {{ block "main" . }}{{ end }}
+    </main>
+
+    <footer>
+        <div class="container">
+            <small>
+                &copy; {{ now.Format "2006" }} {{ .Site.Params.author }}. Built with <a href="https://gohugo.io" class="secondary">Hugo</a> & <a href="https://picocss.com" class="secondary">Pico CSS</a>.
+            </small>
+        </div>
+    </footer>
+</body>
+</html>
