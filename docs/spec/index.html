@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <title>仕様と特徴 - glas - Git-aware ls</title>
+    <style>
+         
+        header {
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+        footer {
+            border-top: 1px solid var(--pico-muted-border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        main {
+            min-height: 60vh;
+        }
+    </style>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><strong><a href="/glas" class="contrast">glas - Git-aware ls</a></strong></li>
+            </ul>
+            <ul>
+                <li><a href="/glas/docs/" class="secondary">ドキュメント</a></li>
+                <li><a href="https://github.com/hagatasdelus/glas" target="_blank" rel="noopener noreferrer" class="secondary">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        
+<div class="grid" style="grid-template-columns: 250px 1fr;">
+    <aside>
+        <nav>
+            <ul>
+                <li><strong>メニュー</strong></li>
+                <li><a href="/glas" class="secondary">ホーム</a></li>
+                
+                <li><a href="/glas/docs/usage/" class="secondary">使い方</a></li>
+                
+                <li><a href="/glas/docs/spec/" class="contrast">仕様と特徴</a></li>
+                
+            </ul>
+        </nav>
+    </aside>
+    <section>
+        <article>
+            <header>
+                <h1>仕様と特徴</h1>
+            </header>
+            <h2 id="デザインポリシー">デザインポリシー</h2>
+<p><code>glas</code> は、モダンなCLIツールである <code>eza</code> にインスパイアされつつ、Gitとの緊密な統合を目指して作られています。</p>
+<ul>
+<li><strong>状態とロジックの分離</strong>: ファイルのメタデータ取得、Gitステータスの取得、および端末への描画ロジックが独立して設計されています。</li>
+<li><strong>パフォーマンス最適化</strong>: パス走査時のアロケーションを抑え、数万規模のファイルを含むリポジトリでも軽快に動作します。</li>
+<li><strong>マルチプラットフォーム互換性</strong>: Windows, macOS, Linux すべての環境で動作し、各OS固有のファイル属性（NTFSの隠しファイル属性など）に対応しています。</li>
+</ul>
+<hr>
+<h2 id="挙動の優先順位と特別仕様">挙動の優先順位と特別仕様</h2>
+<ul>
+<li><strong>インデックスセレクタの自動変換</strong>:
+<code>--cached</code> または <code>--stage</code> オプションを指定した場合、Gitインデックス（ファイル単位の情報）から読み出すため、自動的に <code>-f</code> (<code>--only-files</code>) が有効になり、空のディレクトリ等は表示対象から除外されます。</li>
+<li><strong>ファイルの個別指定時のカラーリング</strong>:
+<code>glas Cargo.toml</code> のようにファイルを直接指定して呼び出した場合でも、そのファイルのGit上のステータス（変更中＝黄色など）が適用されて出力されます。</li>
+<li><strong>README / 特殊ファイルの強調表示</strong>:
+<code>Cargo.toml</code> や <code>README.md</code>, <code>justfile</code> などのプロジェクトにおける重要な特殊ファイルは、Gitステータスに関わらず常に<strong>太字</strong>で表示され、一目で認識できるようになっています。</li>
+</ul>
+
+        </article>
+    </section>
+</div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <small>
+                &copy; 2026 hagatasdelus. Built with <a href="https://gohugo.io" class="secondary">Hugo</a> & <a href="https://picocss.com" class="secondary">Pico CSS</a>.
+            </small>
+        </div>
+    </footer>
+</body>
+</html>
