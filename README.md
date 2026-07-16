@@ -4,7 +4,7 @@
 [![install size](https://img.shields.io/badge/install_size-0.0_kB-green.svg)](https://packagephobia.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/hagatasdelus/glas/badge.svg?branch=main)](https://coveralls.io/github/hagatasdelus/glas?branch=main)
-[![Version](https://img.shields.io/badge/Version-0.1.1-blue.svg)](https://github.com/hagatasdelus/glas/releases/tag/v0.1.1)
+[![Version](https://img.shields.io/badge/Version-0.1.2-blue.svg)](https://github.com/hagatasdelus/glas/releases/tag/v0.1.2)
 
 <div align="center" style="font-size: 1.1rem;"><sub>
 README: <a href="./README.md">English</a> | <a href="./README_ja.md">日本語</a>
