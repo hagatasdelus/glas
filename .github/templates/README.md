@@ -34,18 +34,18 @@ brew install hagatasdelus/tap/glas
 glas [OPTIONS] [FILE]...
 
 Options:
-  -h, --help             Print help
-  -V, --version          Print version
-      --completions      generate completion files
+  -h, --help                 Print help
+  -V, --version              Print version
+      --completions          generate completion files
 
 DISPLAY OPTIONS:
-  -1, --oneline          display one entry per line
-  -l, --long             display extended file metadata as a table
-  -H, --header           display a header row in long format
-      --color <COLOR>    [default: auto] [possible values: always, auto, never]
-      --absolute         display entries with their absolute paths
-  -z, --null             terminate lines with a null byte
-      --format <FORMAT>  custom output format
+  -1, --oneline              display one entry per line
+  -l, --long                 display extended file metadata as a table
+  -H, --header               display a header row in long format
+      --color <COLOR>        [default: auto] [possible values: always, auto, never]
+      --absolute             display entries with their absolute paths
+  -z, --null                 terminate lines with a null byte
+      --format <FORMAT>      custom output format
 
 FILTERING AND SORTING OPTIONS:
   -a, --all                  show hidden and dot-files

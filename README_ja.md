@@ -34,18 +34,18 @@ brew install hagatasdelus/tap/glas
 glas [OPTIONS] [FILE]...
 
 オプション:
-  -h, --help             ヘルプを表示する
-  -V, --version          バージョン情報を表示する
-      --completions      シェル補完定義ファイルを生成する
+  -h, --help                 ヘルプを表示する
+  -V, --version              バージョン情報を表示する
+      --completions          シェル補完定義ファイルを生成する
 
 表示オプション:
-  -1, --oneline          1行に1エントリずつ表示する
-  -l, --long             ファイルの拡張メタデータを表形式で表示する
-  -H, --header           ロングフォーマット時にヘッダー行を表示する
-      --color <COLOR>    カラー出力の制御 [always, auto, never] (デフォルト: auto)
-      --absolute         エントリを絶対パスで表示する
-  -z, --null             安全なパイプライン処理のため、各行の末尾にNULL文字（\0）を付加する
-      --format <FORMAT>  カスタム出力フォーマットを指定する
+  -1, --oneline              1行に1エントリずつ表示する
+  -l, --long                 ファイルの拡張メタデータを表形式で表示する
+  -H, --header               ロングフォーマット時にヘッダー行を表示する
+      --color <COLOR>        カラー出力の制御 [always, auto, never] (デフォルト: auto)
+      --absolute             エントリを絶対パスで表示する
+  -z, --null                 安全なパイプライン処理のため、各行の末尾にNULL文字（\0）を付加する
+      --format <FORMAT>      カスタム出力フォーマットを指定する
 
 フィルタ・ソートオプション:
   -a, --all                  隠しファイルを表示する
