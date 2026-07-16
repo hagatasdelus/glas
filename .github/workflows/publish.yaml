@@ -101,9 +101,13 @@ jobs:
         run: |
           rustup update stable
           rustup target add ${{ matrix.target }}
-          cargo install cargo-zigbuild
-          # zigbuild を使って、クロスコンパイルする。
-          cargo zigbuild --release --target ${{ matrix.target }}
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            cargo build --release --target ${{ matrix.target }}
+          else
+            cargo install cargo-zigbuild
+            # zigbuild を使って、クロスコンパイルする。
+            cargo zigbuild --release --target ${{ matrix.target }}
+          fi
 
       - name: Create distribution files.
         run: |
