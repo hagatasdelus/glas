@@ -25,42 +25,46 @@ Built strictly upon the UNIX philosophy, it provides a rich, ANSI-colorized inte
 ## Installation
 
 ```bash
-undefined
+brew install hagatasdelus/tap/glas
 ```
 
 ## Usage
 
 ```bash
-git glas [OPTIONS] [FILE]...
-    or
 glas [OPTIONS] [FILE]...
 
-META OPTIONS
-  -?                         show list of command-line options
-  -v, --version              show version of glas
+Options:
+  -h, --help             Print help
+  -V, --version          Print version
+      --completions      generate completion files
 
-DISPLAY OPTIONS
-  -1, --oneline              display one entry per line
-  -l, --long                 display extended file metadata as a table
-  -h, --header               display a header row in long format
-      --color=WHEN           when to use terminal colors (always, auto, never)
-      --absolute             display entries with their absolute paths
-  -z, --null                 terminate lines with a null byte (\0) for safe pipelining
-      --format=FORMAT        custom output format (e.g., '%(size) %(path)') for robust parsing
+DISPLAY OPTIONS:
+  -1, --oneline          display one entry per line
+  -l, --long             display extended file metadata as a table
+  -H, --header           display a header row in long format
+      --color <COLOR>    [default: auto] [possible values: always, auto, never]
+      --absolute         display entries with their absolute paths
+  -z, --null             terminate lines with a null byte
+      --format <FORMAT>  custom output format
 
-FILTERING AND SORTING OPTIONS
-  -a, --all                  show hidden and dot-files.
-  -d, --treat-dirs-as-files  list directories as files (don't recurse into them)
+FILTERING AND SORTING OPTIONS:
+  -a, --all                  show hidden and dot-files
+  -d, --treat-dirs-as-files  list directories as files
   -D, --only-dirs            list only directories
   -f, --only-files           list only files
-  -s, --sort FIELD           sort entries by FIELD (name, size, time, git)
+  -s, --sort <SORT>          [possible values: name, size, time, git]
 
-GIT-AWARE OPTIONS
-      --git-only             show only tracked files with modifications
-      --show-ignored         show ignored files
+GIT-AWARE OPTIONS:
+      --cached               show cached files in index (default)
+      --stage                show staged contents' mode bits, object name and stage number
+      --deleted              show files with an unstaged deletion
+      --modified             show files with an unstaged modification
+      --others               show other (untracked) files in the output
+      --ignored              show only ignored files in the output
+      --include-ignored      include ignored files in output
       --no-git               disable Git context fetching
-      --flatten DEPTH        flatten nested modified files up to DEPTH (defaults: 0)
-      --full-name            output paths relative to the project top directory
+      --flatten[=<FLATTEN>]  flatten nested modified files [default: 0]
+      --full-name            output paths relative to repo root
 ```
 
 ## Lisence

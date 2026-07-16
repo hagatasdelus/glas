@@ -25,41 +25,45 @@ glas - Git対応でパイプラインフレンドリーな `ls` 代替ツール
 ## インストール
 
 ```bash
-undefined
+brew install hagatasdelus/tap/glas
 ```
 
 ## 使い方
 
 ```bash
-git glas [OPTIONS] [FILE]...
-    or
 glas [OPTIONS] [FILE]...
 
-META OPTIONS:
-  -?,                        ヘルプメッセージを表示する
-  -v, --version              バージョン情報を表示する
+オプション:
+  -h, --help             ヘルプを表示する
+  -V, --version          バージョン情報を表示する
+      --completions      シェル補完定義ファイルを生成する
 
-DISPLAY OPTIONS:
-  -1, --oneline              1行に1エントリずつ表示する
-  -l, --long                 ファイルの拡張メタデータを表形式で表示する
-  -h, --header               ロングフォーマット時にヘッダー行を表示する
-      --color=WHEN           カラー出力の制御 [always, auto, never] (デフォルト: auto)
-      --absolute             エントリを絶対パスで表示する
-  -z, --null                 安全なパイプライン処理のため、各行の末尾にNULL文字（\0）を付加する
-      --format=FORMAT        カスタム出力フォーマットを指定する（例: '%(size) %(path)'）
+表示オプション:
+  -1, --oneline          1行に1エントリずつ表示する
+  -l, --long             ファイルの拡張メタデータを表形式で表示する
+  -H, --header           ロングフォーマット時にヘッダー行を表示する
+      --color <COLOR>    カラー出力の制御 [always, auto, never] (デフォルト: auto)
+      --absolute         エントリを絶対パスで表示する
+  -z, --null             安全なパイプライン処理のため、各行の末尾にNULL文字（\0）を付加する
+      --format <FORMAT>  カスタム出力フォーマットを指定する
 
-FILTERING & SORTING OPTIONS:
-  -a, --all                  隠しファイル（.で始まるファイル）を表示する
-  -d, --treat-dirs-as-files  ディレクトリをファイルとして一覧表示する（再帰的に中身を表示しない）
+フィルタ・ソートオプション:
+  -a, --all                  隠しファイルを表示する
+  -d, --treat-dirs-as-files  ディレクトリをファイルとして一覧表示する
   -D, --only-dirs            ディレクトリのみを表示する
   -f, --only-files           ファイルのみを表示する
-  -s, --sort FIELD           指定したフィールドでソートする [name, size, time, git] (デフォルト: git, then name)
-    
-GIT-AWARE OPTIONS:
-      --git-only             変更がある追跡対象ファイルのみを表示する 
-      --show-ignored         無視されたファイルを表示する
+  -s, --sort <SORT>          指定したフィールドでソートする [name, size, time, git]
+
+GIT関連オプション:
+      --cached               インデックス内のキャッシュされたファイルを表示する (デフォルト)
+      --stage                ステージされたコンテンツのモードビット、オブジェクト名、ステージ番号を表示する
+      --deleted              未ステージの削除があるファイルを表示する
+      --modified             未ステージの変更があるファイルを表示する
+      --others               その他の（追跡されていない）ファイルを表示する
+      --ignored              無視されたファイルのみを表示する
+      --include-ignored      無視されたファイルを結果に含める
       --no-git               Gitコンテキストの取得を無効にする
-      --flatten DEPTH        ネストされた変更ファイルを指定の階層（DEPTH）まで展開して表示する（デフォルト: 0）
+      --flatten[=<FLATTEN>]  ネストされた変更ファイルを指定の階層まで展開して表示する (デフォルト: 0)
       --full-name            プロジェクトのルートディレクトリからの相対パスで出力する
 ```
 
