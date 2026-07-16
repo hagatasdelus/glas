@@ -175,6 +175,9 @@ pub struct Cli {
     )]
     pub full_name: bool,
 
+    #[arg(long, help = "generate completion files", default_value_t = false)]
+    pub completions: bool,
+
     #[arg(value_name = "FILE", hide = true)]
     pub files: Vec<PathBuf>,
 }

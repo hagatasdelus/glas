@@ -4,6 +4,7 @@
 //! It displays file permissions, size, modification time, and Git status in a colorful list.
 
 mod fs;
+mod gencomp;
 mod info;
 mod options;
 mod output;
@@ -22,6 +23,10 @@ use output::{sort_entries, write_output};
 /// Parses command-line arguments and displays the contents of the specified directories.
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
+    if cli.completions {
+        gencomp::generate(std::path::Path::new("completions"));
+        return Ok(());
+    }
     run_with_cli(cli)
 }
 
