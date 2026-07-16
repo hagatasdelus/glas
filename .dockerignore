@@ -1,18 +1,5 @@
+target/
 .git/
 .github/
-.agent/
-.antigravitycli/
-lectures/
-ignored_reports/
-*.md
-*.txt
-coverage.md
-overage.lcov
-RELEASE_GUIDE.md
-TODO.md
-eza_output.txt
-git-ls-files.help
-mise.toml
-BUGS.md
-AGENTS.md
+coverage.lcov
 
