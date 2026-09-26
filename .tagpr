@@ -1,0 +1,8 @@
+[tagpr]
+	vPrefix = true
+	releaseBranch = main
+	release = draft
+	versionFile = Cargo.toml
+	command = "just prerelease"
+	majorLabels = "tagpr:major"
+	minorLabels = "tagpr:minor"

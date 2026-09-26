@@ -1,0 +1,18 @@
+# Configuration for cargo-about
+
+# Accepted licenses
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "CC0-1.0",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "OpenSSL",
+    "Zlib",
+]
+
+# Filtering / ignorable packages (if any)
+# ignore = []
