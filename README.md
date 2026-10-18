@@ -64,13 +64,13 @@ $ glas --flatten=2         # Flatten up to 2 levels deep
 $ glas --flatten=all       # Recursively flatten all nested modifications
 ```
 
-Changes under a nested directory that are not expanded within the flatten depth limit are shown as a summary row for that directory (e.g., `src/ (12 modified files)`) instead of listing nested entries.
+Changes beyond the flatten depth remain represented by a directory row, or by a summary row such as `src/ (12 modified files)` when the containing directory cannot be listed, instead of showing nested entries.
 
 ### Git Selectors (`--cached`, `--stage`, etc.)
 `glas` provides filtering options aligned with `git ls-files`:
 - `--cached`: lists only tracked files in the index.
 - `--stage`: prints mode bits, Git object SHA, and stage number.
-- `--modified`: lists files with unstaged modifications or deletions.
+- `--modified`: lists files with unstaged modifications or deletions; entries with index-side changes (tag `S`) take precedence and are not matched.
 - `--deleted`: lists only files deleted in the working tree.
 - `--others`: lists untracked files.
 - `--ignored`: lists only ignored files.
@@ -78,7 +78,7 @@ Changes under a nested directory that are not expanded within the flatten depth 
 
 > [!NOTE]
 > Passing `--cached` or `--stage` operates on the Git index (file entries) and automatically implies `-f` (`--only-files`), filtering out directories.
-> Selectors match each entry's Git status, so directories aggregating nested changes also match these selectors; changes not expanded within the flatten depth limit are shown as a directory row or a summary row.
+> Selectors filter each entry's Git status, so nested changes may be represented by a `modified` status directory or summary row regardless of the underlying change type.
 
 ### Pipeline-Safe Output
 `glas` automatically adjusts its output based on stdout:
