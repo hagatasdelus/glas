@@ -103,7 +103,7 @@ jobs:
         run: |
           VERSION="${TAG#v}"
           ASSET_FILE="dist/glas-${VERSION}_${{ matrix.arch }}_${{ matrix.os_name }}.tar.gz"
-          gh release upload "${TAG}" "${ASSET_FILE}"
+          gh release upload "${TAG}" "${ASSET_FILE}" --clobber
 
   publish-release:
     name: Publish Release
