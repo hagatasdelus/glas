@@ -1,7 +1,17 @@
+//! # gencomp
+//!
+//! Generates shell completion scripts for the `glas` CLI into an output
+//! directory.
+
 use clap::{Command, CommandFactory};
 use clap_complete::Shell;
 use std::path::Path;
 
+/// Writes the completion script for one shell to `outdir/<shell subdir>/<file>`.
+///
+/// Panics when the destination directory cannot be created. Writing the
+/// destination file is best-effort: when the file cannot be opened, the
+/// shell simply gets no completion script.
 fn generate_impl(s: Shell, app: &mut Command, appname: &str, outdir: &Path, file: String) {
     let destfile = outdir.join(file);
     std::fs::create_dir_all(destfile.parent().unwrap()).unwrap();
@@ -10,6 +20,11 @@ fn generate_impl(s: Shell, app: &mut Command, appname: &str, outdir: &Path, file
     }
 }
 
+/// Generates completion scripts for all supported shells under `outdir`.
+///
+/// Layout matches the shipped release archives: `bash/`, `elvish/`, `fish/`,
+/// `powershell/`, and `zsh/` (zsh uses the `_<appname>` filename convention),
+/// invoked either by `--completions` or the packaging workflow.
 pub fn generate(outdir: &Path) {
     use clap_complete::Shell::{Bash, Elvish, Fish, PowerShell, Zsh};
     let appname = "glas";
