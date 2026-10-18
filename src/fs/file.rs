@@ -11,9 +11,6 @@ use std::time::SystemTime;
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
-#[cfg(windows)]
-use std::os::windows::fs::MetadataExt;
-
 use crate::fs::git::{GitKind, StageInfo};
 
 /// Enum defining types of entries.
