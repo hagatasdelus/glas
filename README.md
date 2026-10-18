@@ -59,18 +59,18 @@ Specifying an explicit file target (e.g., `glas Cargo.toml`) also applies Git st
 By default, `ls` only lists immediate entries in the current directory. With `--flatten`, `glas` surfaces nested modifications from subdirectories into the current view:
 
 ``` console
-$ glas --flatten           # Flatten 1 level of nested modifications
+$ glas --flatten           # Recursively flatten all nested modifications (same as --flatten=all)
 $ glas --flatten=2         # Flatten up to 2 levels deep
 $ glas --flatten=all       # Recursively flatten all nested modifications
 ```
 
-Directories with extensive modifications fall back to a summary row (e.g., `src/ (12 modified files)`) to prevent terminal flooding.
+Changes under a nested directory that are not expanded within the flatten depth limit are shown as a summary row for that directory (e.g., `src/ (12 modified files)`) instead of listing nested entries.
 
 ### Git Selectors (`--cached`, `--stage`, etc.)
 `glas` provides filtering options aligned with `git ls-files`:
 - `--cached`: lists only tracked files in the index.
 - `--stage`: prints mode bits, Git object SHA, and stage number.
-- `--modified`: lists only files with unstaged modifications.
+- `--modified`: lists files with unstaged modifications or deletions.
 - `--deleted`: lists only files deleted in the working tree.
 - `--others`: lists untracked files.
 - `--ignored`: lists only ignored files.
@@ -78,11 +78,12 @@ Directories with extensive modifications fall back to a summary row (e.g., `src/
 
 > [!NOTE]
 > Passing `--cached` or `--stage` operates on the Git index (file entries) and automatically implies `-f` (`--only-files`), filtering out directories.
+> Selectors match each entry's Git status, so directories aggregating nested changes also match these selectors; changes not expanded within the flatten depth limit are shown as a directory row or a summary row.
 
 ### Pipeline-Safe Output
 `glas` automatically adjusts its output based on stdout:
 - When connected to a terminal (TTY), `glas` outputs colored grid or multi-column formats.
-- When piped or redirected, `glas` disables colors and grid layout, falling back to a clean, single-column newline-delimited stream.
+- When piped or redirected, `glas` disables colors and grid layout, falling back to a clean, single-column newline-delimited stream. `--color=always` keeps colors on pipes.
 - Use `-z` / `--null` to terminate entries with a NUL byte (`\0`), making it safe for `xargs -0` or scripts dealing with paths containing spaces or newlines.
 - Use `--format="%(size) %(path)"` to extract specific fields directly.
 
