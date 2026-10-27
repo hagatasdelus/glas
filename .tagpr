@@ -1,0 +1,9 @@
+[tagpr]
+	vPrefix = true
+	releaseBranch = main
+	release = draft
+	versionFile = Cargo.toml
+	command = "just prerelease"
+	postVersionCommand = "cargo metadata --format-version 1 > /dev/null"
+	majorLabels = "tagpr:major"
+	minorLabels = "tagpr:minor"
