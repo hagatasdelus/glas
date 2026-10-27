@@ -16,7 +16,7 @@ jobs:
           echo "tag=${GITHUB_REF##**/v}" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.vars.outputs.branch }}
           fetch-depth: 0
