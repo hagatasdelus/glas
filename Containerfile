@@ -1,5 +1,5 @@
 # Stage 1. Build an app
-FROM rust:1.96.0 AS builder
+FROM rust:1.100.0 AS builder
 
 WORKDIR /app
 COPY . .
